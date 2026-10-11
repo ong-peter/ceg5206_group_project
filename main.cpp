@@ -37,6 +37,8 @@ double percentile(const std::vector<double>& sorted, double p) {
     return sorted[low] + (position - low) * (sorted[high] - sorted[low]);
 }
 
+// Binary files: native-endian FP32, no headers; input Q then K then V, output O.
+// Buffers occupy 16*n*d bytes plus scratch. Repeats defaults to zero.
 int main(int argc, char** argv) {
     try {
         static_assert(sizeof(float) == 4 && std::numeric_limits<float>::is_iec559);

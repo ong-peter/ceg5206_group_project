@@ -139,6 +139,10 @@ def invalid_inputs(binary, directory, algorithm, settings):
 
 
 def main():
+    # After make, test B or C with --algorithm blocked or streaming.
+    # Example: python3 check.py --algorithm blocked --full --tiles --br 32 --bc 64
+    # --algorithm all keeps baseline single-threaded; missing kernels fail.
+    # --tiles sweeps edge cases; core shapes use the chosen Br/Bc pair.
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary", default="./attention")
     parser.add_argument("--algorithm", choices=("baseline", "blocked", "streaming", "all"), default="baseline")

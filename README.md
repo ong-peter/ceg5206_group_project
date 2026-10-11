@@ -1,6 +1,7 @@
 # CPU attention
 
 Part A: a single-thread FP32 baseline and an independent FP64 NumPy reference.
+Computes `softmax(Q K^T / sqrt(d)) V` with one head and no mask.
 
 ## Run
 
@@ -13,23 +14,7 @@ make full       # All 12 shapes; initial timings; results.csv
 make sanitize   # AddressSanitizer and UndefinedBehaviorSanitizer
 ```
 
-## Add B or C
-
-Add `blocked.cpp` or `streaming.cpp`. Each implements the two functions declared in `attention.h`: a scratch-size query and an attention kernel. Makefile detects these files automatically; no algorithm is supplied here.
-
-The query returns scratch size in **floats**, including packing and all workers. The runner preallocates exactly that buffer; streaming does not receive an N*N matrix. The kernel uses `AttentionConfig {br, bc, threads}`, preserves inputs, overwrites output and initializes scratch on each call without allocation. Reject unsupported settings. Baseline uses N*N scratch floats and one thread. Each `make` rebuild reflects the current modules and compiler flags.
-
-All kernels compute `softmax(Q K^T / sqrt(d)) V`, row-wise, with one head and no mask. Q/K/V/O are separate, contiguous row-major N by d FP32 arrays. Input/output storage is 16Nd bytes.
-
-```sh
-./attention --list
-python3 check.py --algorithm blocked --full --tiles --br 32 --bc 64
-python3 check.py --algorithm streaming --full --tiles --threads 2 --csv streaming.csv
-```
-
-`--algorithm all` checks compiled kernels, keeping baseline single-threaded. Missing kernels fail explicitly. `--tiles` sweeps edge cases over the chosen pair, nine pairs from {16,32,64}, (1,1), and tiles larger than N. Core shapes use the chosen pair. `--bench` adds initial timings; `--binary` selects another compatible runner. Defaults: Br=32, Bc=32, threads=1.
-
-The runner accepts `N d input.bin output.bin [repeats]` plus the same algorithm/tile/thread options. Files contain native-endian FP32 values without headers: Q, K, then V for input; O for output. Repeats defaults to zero. `make clean` removes generated binaries.
+Interface notes are in `attention.h`; test options: `python3 check.py --help`.
 
 ## Validation and results
 
