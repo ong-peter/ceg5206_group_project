@@ -44,7 +44,8 @@ void attention_values(const float* scores, const float* v, float* out,
 }
 
 void attention_baseline(const float* q, const float* k, const float* v,
-                        float* out, float* scores, std::size_t n, std::size_t d) {
+                        float* out, float* scores, std::size_t n, std::size_t d,
+                        const AttentionConfig&) {
     attention_scores(q, k, scores, n, d);
     attention_softmax(scores, n);
     attention_values(scores, v, out, n, d);

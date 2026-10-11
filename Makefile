@@ -1,22 +1,24 @@
 CXX = c++
 CXXFLAGS ?= -O3 -std=c++17 -Wall -Wextra -Wpedantic
 PYTHON ?= python3
+SOURCES = attention.cpp main.cpp $(wildcard blocked.cpp streaming.cpp)
+MODULE_FLAGS = $(if $(wildcard blocked.cpp),-DWITH_BLOCKED) $(if $(wildcard streaming.cpp),-DWITH_STREAMING)
 
-.PHONY: all test full sanitize clean
+.PHONY: all attention test full sanitize clean
 all: attention
 
-attention: attention.cpp main.cpp attention.h
-	$(CXX) $(CXXFLAGS) attention.cpp main.cpp -o $@
+attention: $(SOURCES) attention.h Makefile
+	$(CXX) $(CPPFLAGS) $(MODULE_FLAGS) $(CXXFLAGS) $(SOURCES) $(LDFLAGS) $(LDLIBS) -o $@
 
 test: attention
-	$(PYTHON) check.py
+	$(PYTHON) check.py --algorithm all --tiles
 
 full: attention
-	$(PYTHON) check.py --full --bench --csv results.csv
+	$(PYTHON) check.py --algorithm all --full --tiles --bench --csv results.csv
 
 sanitize:
-	$(CXX) -O1 -g -std=c++17 -Wall -Wextra -Wpedantic -fsanitize=address,undefined -fno-omit-frame-pointer attention.cpp main.cpp -o attention-sanitize
-	$(PYTHON) check.py --binary ./attention-sanitize
+	$(CXX) $(CPPFLAGS) $(MODULE_FLAGS) -O1 -g -std=c++17 -Wall -Wextra -Wpedantic -fsanitize=address,undefined -fno-omit-frame-pointer $(SOURCES) $(LDFLAGS) $(LDLIBS) -o attention-sanitize
+	$(PYTHON) check.py --binary ./attention-sanitize --algorithm all --tiles
 
 clean:
 	rm -f attention attention-sanitize
