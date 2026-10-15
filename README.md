@@ -5,16 +5,28 @@ Computes `softmax(Q K^T / sqrt(d)) V` with one head and no mask.
 
 ## Run
 
-Requires C++17, Make, Python 3.10+ and NumPy. Set `PYTHON=/path/to/python3` if needed.
+Requires C++17, Make, and Python with NumPy. CI uses Python 3.12;
+local validation also works with Python 3.13.9 in Conda base. The NumPy version
+is pinned in `requirements.txt` and shared with CI.
+
+For an existing Conda base environment:
 
 ```sh
-python3 -m pip install numpy
+conda activate base
+python -m pip install -r requirements.txt
+python -c "import sys, numpy; print(sys.executable); print(sys.version); print('NumPy', numpy.__version__)"
+export PYTHON="$CONDA_PREFIX/bin/python"
 make test       # Available kernels and edge/tile checks
-make full       # All 12 shapes; initial timings; results.csv
 make sanitize   # AddressSanitizer and UndefinedBehaviorSanitizer
+"$PYTHON" check.py --algorithm all --full --tiles  # All 12 shapes, no timings
 ```
 
-Interface notes are in `attention.h`; test options: `python3 check.py --help`.
+Setting `PYTHON` ensures Make uses the same interpreter as the active Conda
+environment. For another environment, set `PYTHON` to its Python executable.
+For the initial benchmark, run `make full`; this overwrites `results.csv` and
+currently times only the (128, 64) and (512, 64) shapes.
+
+Interface notes are in `attention.h`; test options: `"$PYTHON" check.py --help`.
 
 ## Validation and results
 

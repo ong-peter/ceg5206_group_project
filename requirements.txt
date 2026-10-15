@@ -1,0 +1,2 @@
+# Consistent between local validation and GitHub Actions.
+numpy==2.3.5
