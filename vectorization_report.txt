@@ -1,0 +1,6 @@
+blocked.cpp:99:47: optimized: loop vectorized using 16 byte vectors
+blocked.cpp:99:47: optimized:  loop versioned for vectorization because of possible aliasing
+blocked.cpp:99:47: optimized: loop vectorized using 8 byte vectors
+blocked.cpp:81:39: optimized: loop vectorized using 16 byte vectors
+blocked.cpp:81:39: optimized: loop vectorized using 8 byte vectors
+blocked.cpp:65:47: optimized: loop vectorized using 16 byte vectors
