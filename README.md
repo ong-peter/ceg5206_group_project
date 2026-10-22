@@ -23,10 +23,40 @@ make sanitize   # AddressSanitizer and UndefinedBehaviorSanitizer
 
 Setting `PYTHON` ensures Make uses the same interpreter as the active Conda
 environment. For another environment, set `PYTHON` to its Python executable.
-For the initial benchmark, run `make full`; this overwrites `results.csv` and
-currently times only the (128, 64) and (512, 64) shapes.
+For the full benchmark, run `make full`; this overwrites `results.csv` and
+times all 12 core shapes: N in {128, 512, 2048, 4096} and d in {32, 64, 128}.
+Without `--full`, `--bench` times only (128, 64) and (512, 64).
+Edge cases are checked for correctness but are not timed.
 
 Interface notes are in `attention.h`; test options: `"$PYTHON" check.py --help`.
+
+## Automated tile tuning
+
+Once `blocked.cpp` or `streaming.cpp` is implemented and compiled, run:
+
+```sh
+python check.py --algorithm all --tune --tiles --csv tuning-results.csv
+python check.py --algorithm all --tile-config tuned-tiles.json --full --bench --csv results.csv
+```
+
+Tuning checks correctness before timing each of the nine Br/Bc pairs in
+{16, 32, 64} on (512, 64) and (2048, 64), using one thread, five warm-ups and
+15 samples. All candidates must pass. It chooses one pair per optimized family
+by minimizing the geometric mean of median times relative to 32x32 on each
+shape, giving both shapes equal weight. The baseline is not tuned.
+
+Raw timing samples and errors are saved as `tuning` rows in the CSV. Selected
+tiles, the selection rule, and wall-clock tuning costs (including validation
+and process/file overhead) are saved to `tuned-tiles.json`. The tuning command
+then runs the usual correctness suite with the selected tiles; `--tiles` also
+checks edge cases across the tile sweep. `--tune --full --bench` additionally
+benchmarks all core shapes using the selected tiles in that same invocation.
+Use `--tuning-output PATH` to change the JSON output location.
+
+`--tile-config` reuses the saved pair for each optimized family across shapes;
+it takes precedence over `--br`/`--bc`. It can also be combined with `--threads`
+once threaded kernels exist. Retune after changing kernels, compiler settings,
+or hardware. Tuning requires at least one compiled optimized kernel.
 
 ## Validation and results
 
