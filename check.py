@@ -306,6 +306,13 @@ def main():
                         repeated, _ = run(binary, directory, q, k, v, 0, algorithm, settings)
                         if not np.array_equal(actual, repeated):
                             raise RuntimeError(f"Repeated {algorithm} runs produced different outputs")
+                        # Each query row belongs to one worker, so the thread count must not
+                        # change any output bit. This also catches races on shared rows.
+                        if settings[2] > 1:
+                            single, _ = run(binary, directory, q, k, v, 0, algorithm, (br, bc, 1))
+                            if not np.array_equal(actual, single):
+                                raise RuntimeError(f"{algorithm} output with {settings[2]} threads differs "
+                                                   f"from one thread: {name} Br={br} Bc={bc}")
                 if name != "core":
                     for dtype in (np.float64, np.float32):
                         measurements = []

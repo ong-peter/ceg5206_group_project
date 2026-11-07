@@ -49,7 +49,7 @@ NOVEC_BUILD_FLAGS = $(COMPILE) $(NOVEC_FLAGS) $(LDFLAGS)
 # x86 SIMD-width comparison binaries (bench-width).
 WIDTH_COMPILE = $(CXX) $(CPPFLAGS) $(MODULE_FLAGS) $(CXXFLAGS) $(call probe,-march=native) $(SIMD_FLAGS)
 
-.PHONY: all attention-flags test full sanitize clean test-b bench bench-quick bench-width vec-report
+.PHONY: all attention-flags test test-threads full sanitize clean test-b bench bench-quick bench-scaling bench-width vec-report
 all: attention
 
 # Rebuild when flags change (e.g. OPENMP=1 after a default build).
@@ -69,6 +69,18 @@ attention-w256 attention-w512: attention-w%: $(SOURCES) $(HEADERS) Makefile .bui
 test: attention
 	$(PYTHON) check.py --algorithm all --tiles
 
+# Thread correctness: outputs must be bitwise identical to one thread.
+# Covers odd counts, more threads than query blocks, and oversubscription.
+CORES := $(shell $(PYTHON) -c "from bench import physical_cores; print(physical_cores())" 2>/dev/null || echo 4)
+LOGICAL := $(shell getconf _NPROCESSORS_ONLN 2>/dev/null || echo $(CORES))
+# 1, 2, 4, ... below the physical core count, plus the core count itself.
+SCALING_THREADS ?= $(shell $(PYTHON) -c "c=$(CORES); print(','.join(str(t) for t in sorted({c, *(2**i for i in range(c.bit_length()) if 2**i < c)})))")
+test-threads: attention
+	@./attention --build-info | grep -q openmp=1 || { echo "Rebuild with: make clean && make OPENMP=1"; exit 1; }
+	@for t in 2 3 $(CORES) $(LOGICAL) 64; do \
+		echo "== $$t threads"; $(PYTHON) check.py --algorithm all --tiles --threads $$t | tail -1 || exit 1; \
+	done
+
 # Correctness on all 12 core shapes plus edge cases; errors saved to results.csv.
 full: attention
 	$(PYTHON) check.py --algorithm all --full --tiles $(TILE_ARG) --csv results.csv
@@ -82,6 +94,12 @@ bench: attention attention-novec
 
 bench-quick: attention attention-novec
 	$(PYTHON) bench.py --novec-binary ./attention-novec $(TILE_ARG) --csv ladder.csv
+
+# Thread scaling (Task 4): 1, 2, 4, ... up to physical cores, threads pinned to cores.
+bench-scaling: attention
+	@./attention --build-info | grep -q openmp=1 || { echo "Rebuild with: make clean && make OPENMP=1"; exit 1; }
+	OMP_PLACES=cores OMP_PROC_BIND=close $(PYTHON) bench.py --threads $(SCALING_THREADS) \
+		--shapes 512x64,4096x64 --rounds 3 $(TILE_ARG) --csv scaling.csv
 
 # x86 AVX-512 CPUs: compare 256- and 512-bit vectors on the optimized kernels.
 bench-width: attention-w256 attention-w512

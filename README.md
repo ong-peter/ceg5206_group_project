@@ -63,6 +63,18 @@ speedup, GFLOP/s, scratch bytes and build flags. Pass `--tile-config tuned-tiles
 to use the tuned tiles (the Make targets do this when the file exists), and
 `--rounds R` to interleave variants over R rounds.
 
+### Threads (Task 4)
+
+```sh
+make clean && make OPENMP=1 test-threads   # outputs must match one thread bit for bit
+make OPENMP=1 bench-scaling                # 1, 2, 4, ... cores on 512x64 and 4096x64
+```
+
+`--threads` takes a list such as `1,2,4,8`, and `--shapes 512x64,4096x64` picks
+shapes. Each run records `OMP_PLACES`/`OMP_PROC_BIND` per row and saves machine
+details to `<csv>.machine.json`. See `docs/task4-threading.md` for the design,
+false sharing, load balance and results.
+
 ## Automated tile tuning
 
 Once `blocked.cpp` or `streaming.cpp` is implemented and compiled, run:

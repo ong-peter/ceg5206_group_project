@@ -5,3 +5,8 @@ attention-sanitize
 __pycache__/
 .DS_Store
 *.csv
+.build-flags
+attention-novec
+attention-w256
+attention-w512
+*.machine.json
