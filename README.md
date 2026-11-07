@@ -18,17 +18,50 @@ python -c "import sys, numpy; print(sys.executable); print(sys.version); print('
 export PYTHON="$CONDA_PREFIX/bin/python"
 make test       # Available kernels and edge/tile checks
 make sanitize   # AddressSanitizer and UndefinedBehaviorSanitizer
-"$PYTHON" check.py --algorithm all --full --tiles  # All 12 shapes, no timings
+make full       # All 12 core shapes and edge cases; errors in results.csv
 ```
 
 Setting `PYTHON` ensures Make uses the same interpreter as the active Conda
 environment. For another environment, set `PYTHON` to its Python executable.
-For the full benchmark, run `make full`; this overwrites `results.csv` and
-times all 12 core shapes: N in {128, 512, 2048, 4096} and d in {32, 64, 128}.
-Without `--full`, `--bench` times only (128, 64) and (512, 64).
-Edge cases are checked for correctness but are not timed.
+`check.py` checks correctness only: core shapes are N in {128, 512, 2048, 4096}
+and d in {32, 64, 128} with `--full`, otherwise (128, 64) and (512, 64).
+Timing is done by `bench.py` (see Benchmark ladder) and by tile tuning.
 
 Interface notes are in `attention.h`; test options: `"$PYTHON" check.py --help`.
+
+## Build flags and vectorization
+
+Every kernel, the baseline included, is built with `-O3` and `-march=native`
+(`-mcpu=native` on ARM), so they all share ISA settings; use `ARCH_FLAGS=` for a
+portable build. `-fopenmp-simd` enables the `omp simd` loop hints in `simd.h`
+without needing the OpenMP runtime, so single-thread builds vectorize the dot
+product reduction too. `make OPENMP=1` adds threading. A flag change triggers
+a rebuild, and `./attention --build-info` prints the flags the binary was built
+with. `make attention-novec` builds the vectorization ablation: same flags, but
+with auto-vectorization and SIMD hints disabled.
+`make vec-report` lists vectorized loops (GCC `-fopt-info`, Clang `-Rpass`).
+
+The Makefile detects the compiler and CPU. On Apple silicon it uses `-mcpu=native`
+and the Clang ablation flags. For `OPENMP=1`, run `brew install libomp`; the
+Makefile then adds `-Xpreprocessor -fopenmp -lomp`. On x86 CPUs with AVX-512,
+`make OPENMP=1 bench-width` compares 256- and 512-bit vectors (`VEC_WIDTH=512`
+switches the main build). ARM NEON is fixed at 128 bits, so this target is x86-only.
+
+## Benchmark ladder
+
+```sh
+make clean && make OPENMP=1 bench-quick   # (512, 64) and (2048, 64)
+make OPENMP=1 bench                       # all 12 core shapes
+```
+
+`bench.py` compares stages cumulatively on the same inputs: 1 (baseline),
+1+2 (blocked), 1+2+3 (streaming), and 1+2+4 / 1+2+3+4 (threaded, physical cores
+by default), plus a 1-thread no-vectorization ablation of every family. It
+checks each variant against the FP64 reference before timing it. The output,
+`ladder.csv`, includes the median and IQR, speedup over the baseline, thread
+speedup, GFLOP/s, scratch bytes and build flags. Pass `--tile-config tuned-tiles.json`
+to use the tuned tiles (the Make targets do this when the file exists), and
+`--rounds R` to interleave variants over R rounds.
 
 ## Automated tile tuning
 
@@ -36,7 +69,7 @@ Once `blocked.cpp` or `streaming.cpp` is implemented and compiled, run:
 
 ```sh
 python check.py --algorithm all --tune --tiles --csv tuning-results.csv
-python check.py --algorithm all --tile-config tuned-tiles.json --full --bench --csv results.csv
+make OPENMP=1 bench   # picks up tuned-tiles.json
 ```
 
 Tuning checks correctness before timing each of the nine Br/Bc pairs in
@@ -49,8 +82,7 @@ Raw timing samples and errors are saved as `tuning` rows in the CSV. Selected
 tiles, the selection rule, and wall-clock tuning costs (including validation
 and process/file overhead) are saved to `tuned-tiles.json`. The tuning command
 then runs the usual correctness suite with the selected tiles; `--tiles` also
-checks edge cases across the tile sweep. `--tune --full --bench` additionally
-benchmarks all core shapes using the selected tiles in that same invocation.
+checks edge cases across the tile sweep.
 Use `--tuning-output PATH` to change the JSON output location.
 
 `--tile-config` reuses the saved pair for each optimized family across shapes;

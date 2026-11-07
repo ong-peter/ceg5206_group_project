@@ -1,4 +1,5 @@
 #include "attention.h"
+#include "simd.h"
 
 #include <algorithm>
 #include <cmath>
@@ -59,9 +60,7 @@ void attention_blocked(const float* q, const float* k, const float* v,
                     const float* kj = k + j * d;
                     float acc = 0.0f;
                     // SIMD reduction: vectorization report should identify this loop.
-#ifdef _OPENMP
-                    #pragma omp simd reduction(+:acc)
-#endif
+                    ATTN_SIMD_SUM(acc)
                     for (std::size_t f = 0; f < d; ++f)
                         acc += qi[f] * kj[f];
                     si[j] = acc * scale;
@@ -93,9 +92,7 @@ void attention_blocked(const float* q, const float* k, const float* v,
                 for (std::size_t j = j0; j < jend; ++j) {
                     const float weight = si[j];
                     const float* vj = v + j * d;
-#ifdef _OPENMP
-                    #pragma omp simd
-#endif
+                    ATTN_SIMD
                     for (std::size_t f = 0; f < d; ++f)
                         oi[f] += weight * vj[f];
                 }

@@ -52,6 +52,24 @@ int main(int argc, char** argv) {
 #endif
             return 0;
         }
+        if (argc == 2 && std::string(argv[1]) == "--build-info") {
+#ifdef ATTN_BUILD_FLAGS
+            std::cout << "flags=" << ATTN_BUILD_FLAGS << '\n';
+#else
+            std::cout << "flags=unknown\n";
+#endif
+#ifdef _OPENMP
+            std::cout << "openmp=1\n";
+#else
+            std::cout << "openmp=0\n";
+#endif
+#ifdef ATTN_NO_SIMD
+            std::cout << "vectorized=0\n";
+#else
+            std::cout << "vectorized=1\n";
+#endif
+            return 0;
+        }
         if (argc < 5)
             throw std::invalid_argument("Usage: attention N d input.bin output.bin [repeats] "
                                         "[--algorithm NAME] [--br B] [--bc B] [--threads T]");

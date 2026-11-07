@@ -205,6 +205,7 @@ def main():
     # Example: python3 check.py --algorithm blocked --full --tiles --br 32 --bc 64
     # --algorithm all keeps baseline single-threaded; missing kernels fail.
     # --tiles sweeps edge cases; core shapes use the chosen Br/Bc pair.
+    # Correctness only, apart from --tune; benchmark with bench.py.
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary", default="./attention")
     parser.add_argument("--algorithm", choices=("baseline", "blocked", "streaming", "all"), default="baseline")
@@ -213,7 +214,6 @@ def main():
     parser.add_argument("--threads", type=int, default=1)
     parser.add_argument("--tiles", action="store_true", help="Sweep edge-case tile sizes for optimized kernels")
     parser.add_argument("--full", action="store_true")
-    parser.add_argument("--bench", action="store_true", help="Time selected kernels on core shapes; use --full for all 12 shapes")
     parser.add_argument("--csv", type=Path)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--tune", action="store_true", help="Tune nine tile pairs at (512,64) and (2048,64), then test selected tiles")
@@ -299,18 +299,10 @@ def main():
                         pairs = list(dict.fromkeys([*pairs, *tiles]))
                     for br, bc in pairs:
                         settings = (br, bc, 1 if algorithm == "baseline" else args.threads)
-                        repeats = 15 if args.bench and name == "core" else 0
                         actual, _ = run(binary, directory, q, k, v, 0, algorithm, settings)
                         metrics = errors(actual, expected)
                         reported = (0, 0, 1) if algorithm == "baseline" else settings
-                        timing = {}
-                        if not metrics[2]:
-                            record(name, algorithm, n, d, metrics, settings=reported)
-                        if repeats:
-                            timed, timing = run(binary, directory, q, k, v, repeats, algorithm, settings)
-                            if not np.array_equal(actual, timed):
-                                raise RuntimeError(f"Timed {algorithm} output changed")
-                        record(name, algorithm, n, d, metrics, settings=reported, timing=timing)
+                        record(name, algorithm, n, d, metrics, settings=reported)
                         repeated, _ = run(binary, directory, q, k, v, 0, algorithm, settings)
                         if not np.array_equal(actual, repeated):
                             raise RuntimeError(f"Repeated {algorithm} runs produced different outputs")
