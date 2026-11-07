@@ -1,0 +1,31 @@
+blocked: 16 input/option checks passed
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=32 T=2
+online-fp64  single              1x33  abs=0.000e+00 rel=0.000e+00 PASS
+online-fp32  single              1x33  abs=0.000e+00 rel=0.000e+00 PASS
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=32 T=2
+online-fp64  zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS
+online-fp32  zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS
+blocked      zero-scores        17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=32 Bc=32 T=2
+online-fp64  zero-scores        17x7   abs=2.776e-17 rel=6.238e-17 PASS
+online-fp32  zero-scores        17x7   abs=2.405e-08 rel=5.385e-08 PASS
+blocked      identical-rows     17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=32 Bc=32 T=2
+online-fp64  identical-rows     17x7   abs=2.776e-17 rel=6.238e-17 PASS
+online-fp32  identical-rows     17x7   abs=2.405e-08 rel=5.385e-08 PASS
+blocked      tail-127-33       127x33  abs=9.683e-08 rel=2.888e-07 PASS Br=32 Bc=32 T=2
+online-fp64  tail-127-33       127x33  abs=2.914e-16 rel=6.563e-16 PASS
+online-fp32  tail-127-33       127x33  abs=9.754e-08 rel=2.812e-07 PASS
+blocked      tail-513-65       513x65  abs=1.069e-07 rel=5.219e-07 PASS Br=32 Bc=32 T=2
+online-fp64  tail-513-65       513x65  abs=2.082e-16 rel=1.129e-15 PASS
+online-fp32  tail-513-65       513x65  abs=8.955e-08 rel=5.378e-07 PASS
+blocked      concentrated      127x33  abs=4.805e-06 rel=6.457e-07 PASS Br=32 Bc=32 T=2
+online-fp64  concentrated      127x33  abs=1.647e-14 rel=2.448e-15 PASS
+online-fp32  concentrated      127x33  abs=1.118e-05 rel=1.461e-06 PASS
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=32 Bc=32 T=2
+online-fp64  rising-maximum     65x5   abs=1.110e-16 rel=1.291e-16 PASS
+online-fp32  rising-maximum     65x5   abs=1.486e-08 rel=2.387e-08 PASS
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=32 Bc=32 T=2
+online-fp64  early-maximum      65x5   abs=2.220e-16 rel=2.495e-16 PASS
+online-fp32  early-maximum      65x5   abs=2.257e-08 rel=2.870e-08 PASS
+blocked      core              128x64  abs=1.103e-07 rel=2.705e-07 PASS Br=32 Bc=32 T=2
+blocked      core              512x64  abs=1.143e-07 rel=5.582e-07 PASS Br=32 Bc=32 T=2
+All checks passed.

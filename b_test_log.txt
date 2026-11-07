@@ -1,0 +1,121 @@
+blocked: 16 input/option checks passed
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=32 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=1 Bc=1 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=16 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=32 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=64 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=16 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=64 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=16 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=32 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=64 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=2 Bc=2 T=1
+online-fp64  single              1x33  abs=0.000e+00 rel=0.000e+00 PASS
+online-fp32  single              1x33  abs=0.000e+00 rel=0.000e+00 PASS
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=32 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=1 Bc=1 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=16 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=32 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=64 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=16 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=64 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=16 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=32 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=64 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=18 Bc=18 T=1
+online-fp64  zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS
+online-fp32  zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS
+blocked      zero-scores        17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=32 Bc=32 T=1
+blocked      zero-scores        17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=1 Bc=1 T=1
+blocked      zero-scores        17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=16 Bc=16 T=1
+blocked      zero-scores        17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=16 Bc=32 T=1
+blocked      zero-scores        17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=16 Bc=64 T=1
+blocked      zero-scores        17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=32 Bc=16 T=1
+blocked      zero-scores        17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=32 Bc=64 T=1
+blocked      zero-scores        17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=64 Bc=16 T=1
+blocked      zero-scores        17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=64 Bc=32 T=1
+blocked      zero-scores        17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=64 Bc=64 T=1
+blocked      zero-scores        17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=18 Bc=18 T=1
+online-fp64  zero-scores        17x7   abs=2.776e-17 rel=6.238e-17 PASS
+online-fp32  zero-scores        17x7   abs=2.405e-08 rel=5.385e-08 PASS
+blocked      identical-rows     17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=32 Bc=32 T=1
+blocked      identical-rows     17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=1 Bc=1 T=1
+blocked      identical-rows     17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=16 Bc=16 T=1
+blocked      identical-rows     17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=16 Bc=32 T=1
+blocked      identical-rows     17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=16 Bc=64 T=1
+blocked      identical-rows     17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=32 Bc=16 T=1
+blocked      identical-rows     17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=32 Bc=64 T=1
+blocked      identical-rows     17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=64 Bc=16 T=1
+blocked      identical-rows     17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=64 Bc=32 T=1
+blocked      identical-rows     17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=64 Bc=64 T=1
+blocked      identical-rows     17x7   abs=2.405e-08 rel=6.742e-08 PASS Br=18 Bc=18 T=1
+online-fp64  identical-rows     17x7   abs=2.776e-17 rel=6.238e-17 PASS
+online-fp32  identical-rows     17x7   abs=2.405e-08 rel=5.385e-08 PASS
+blocked      tail-127-33       127x33  abs=1.117e-07 rel=2.846e-07 PASS Br=32 Bc=32 T=1
+blocked      tail-127-33       127x33  abs=1.117e-07 rel=2.846e-07 PASS Br=1 Bc=1 T=1
+blocked      tail-127-33       127x33  abs=1.117e-07 rel=2.846e-07 PASS Br=16 Bc=16 T=1
+blocked      tail-127-33       127x33  abs=1.117e-07 rel=2.846e-07 PASS Br=16 Bc=32 T=1
+blocked      tail-127-33       127x33  abs=1.117e-07 rel=2.846e-07 PASS Br=16 Bc=64 T=1
+blocked      tail-127-33       127x33  abs=1.117e-07 rel=2.846e-07 PASS Br=32 Bc=16 T=1
+blocked      tail-127-33       127x33  abs=1.117e-07 rel=2.846e-07 PASS Br=32 Bc=64 T=1
+blocked      tail-127-33       127x33  abs=1.117e-07 rel=2.846e-07 PASS Br=64 Bc=16 T=1
+blocked      tail-127-33       127x33  abs=1.117e-07 rel=2.846e-07 PASS Br=64 Bc=32 T=1
+blocked      tail-127-33       127x33  abs=1.117e-07 rel=2.846e-07 PASS Br=64 Bc=64 T=1
+blocked      tail-127-33       127x33  abs=1.117e-07 rel=2.846e-07 PASS Br=128 Bc=128 T=1
+online-fp64  tail-127-33       127x33  abs=2.914e-16 rel=6.563e-16 PASS
+online-fp32  tail-127-33       127x33  abs=9.754e-08 rel=2.812e-07 PASS
+blocked      tail-513-65       513x65  abs=1.038e-07 rel=5.264e-07 PASS Br=32 Bc=32 T=1
+blocked      tail-513-65       513x65  abs=1.038e-07 rel=5.264e-07 PASS Br=1 Bc=1 T=1
+blocked      tail-513-65       513x65  abs=1.038e-07 rel=5.264e-07 PASS Br=16 Bc=16 T=1
+blocked      tail-513-65       513x65  abs=1.038e-07 rel=5.264e-07 PASS Br=16 Bc=32 T=1
+blocked      tail-513-65       513x65  abs=1.038e-07 rel=5.264e-07 PASS Br=16 Bc=64 T=1
+blocked      tail-513-65       513x65  abs=1.038e-07 rel=5.264e-07 PASS Br=32 Bc=16 T=1
+blocked      tail-513-65       513x65  abs=1.038e-07 rel=5.264e-07 PASS Br=32 Bc=64 T=1
+blocked      tail-513-65       513x65  abs=1.038e-07 rel=5.264e-07 PASS Br=64 Bc=16 T=1
+blocked      tail-513-65       513x65  abs=1.038e-07 rel=5.264e-07 PASS Br=64 Bc=32 T=1
+blocked      tail-513-65       513x65  abs=1.038e-07 rel=5.264e-07 PASS Br=64 Bc=64 T=1
+blocked      tail-513-65       513x65  abs=1.038e-07 rel=5.264e-07 PASS Br=514 Bc=514 T=1
+online-fp64  tail-513-65       513x65  abs=2.082e-16 rel=1.129e-15 PASS
+online-fp32  tail-513-65       513x65  abs=8.955e-08 rel=5.378e-07 PASS
+blocked      concentrated      127x33  abs=8.367e-06 rel=1.330e-06 PASS Br=32 Bc=32 T=1
+blocked      concentrated      127x33  abs=8.367e-06 rel=1.330e-06 PASS Br=1 Bc=1 T=1
+blocked      concentrated      127x33  abs=8.367e-06 rel=1.330e-06 PASS Br=16 Bc=16 T=1
+blocked      concentrated      127x33  abs=8.367e-06 rel=1.330e-06 PASS Br=16 Bc=32 T=1
+blocked      concentrated      127x33  abs=8.367e-06 rel=1.330e-06 PASS Br=16 Bc=64 T=1
+blocked      concentrated      127x33  abs=8.367e-06 rel=1.330e-06 PASS Br=32 Bc=16 T=1
+blocked      concentrated      127x33  abs=8.367e-06 rel=1.330e-06 PASS Br=32 Bc=64 T=1
+blocked      concentrated      127x33  abs=8.367e-06 rel=1.330e-06 PASS Br=64 Bc=16 T=1
+blocked      concentrated      127x33  abs=8.367e-06 rel=1.330e-06 PASS Br=64 Bc=32 T=1
+blocked      concentrated      127x33  abs=8.367e-06 rel=1.330e-06 PASS Br=64 Bc=64 T=1
+blocked      concentrated      127x33  abs=8.367e-06 rel=1.330e-06 PASS Br=128 Bc=128 T=1
+online-fp64  concentrated      127x33  abs=1.647e-14 rel=2.448e-15 PASS
+online-fp32  concentrated      127x33  abs=1.118e-05 rel=1.461e-06 PASS
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=32 Bc=32 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=1 Bc=1 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=16 Bc=16 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=16 Bc=32 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=16 Bc=64 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=32 Bc=16 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=32 Bc=64 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=64 Bc=16 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=64 Bc=32 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=64 Bc=64 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=66 Bc=66 T=1
+online-fp64  rising-maximum     65x5   abs=1.110e-16 rel=1.291e-16 PASS
+online-fp32  rising-maximum     65x5   abs=1.486e-08 rel=2.387e-08 PASS
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=32 Bc=32 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=1 Bc=1 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=16 Bc=16 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=16 Bc=32 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=16 Bc=64 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=32 Bc=16 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=32 Bc=64 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=64 Bc=16 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=64 Bc=32 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=64 Bc=64 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=66 Bc=66 T=1
+online-fp64  early-maximum      65x5   abs=2.220e-16 rel=2.495e-16 PASS
+online-fp32  early-maximum      65x5   abs=2.257e-08 rel=2.870e-08 PASS
+blocked      core              128x64  abs=9.032e-08 rel=2.655e-07 PASS Br=32 Bc=32 T=1
+blocked      core              512x64  abs=1.100e-07 rel=5.599e-07 PASS Br=32 Bc=32 T=1
+All checks passed.
