@@ -10,3 +10,8 @@ attention-novec
 attention-w256
 attention-w512
 *.machine.json
+.venv/
+results/
+streaming-test
+streaming-test-sanitize
+dist/

@@ -70,16 +70,18 @@ int main(int argc, char** argv) {
 #endif
             return 0;
         }
-        if (argc < 5)
+        const bool memory_only = argc >= 4 && std::string(argv[3]) == "--memory";
+        if (argc < (memory_only ? 4 : 5))
             throw std::invalid_argument("Usage: attention N d input.bin output.bin [repeats] "
-                                        "[--algorithm NAME] [--br B] [--bc B] [--threads T]");
+                                        "[--algorithm NAME] [--br B] [--bc B] [--threads T]\n"
+                                        "Or: attention N d --memory [same algorithm/tile/thread options]");
         const std::size_t n = number(argv[1]);
         const std::size_t d = number(argv[2]);
         std::size_t repeats = 0;
         std::string algorithm = "baseline";
         AttentionConfig config;
-        int argument = 5;
-        if (argument < argc && std::string(argv[argument]).rfind("--", 0) != 0)
+        int argument = memory_only ? 4 : 5;
+        if (!memory_only && argument < argc && std::string(argv[argument]).rfind("--", 0) != 0)
             repeats = number(argv[argument++]);
         while (argument < argc) {
             const std::string option = argv[argument++];
@@ -125,6 +127,16 @@ int main(int argc, char** argv) {
             throw std::invalid_argument("Algorithm unavailable: " + algorithm + "; use --list");
         }
         const std::size_t scratch_bytes = product(sizeof(float), scratch_count);
+        if (memory_only) {
+            // Query the same scratch function used by the allocating runner.
+            // The current kernels retain no auxiliary arrays between calls.
+            std::cout << "algorithm,n,d,br,bc,threads,scratch_bytes,persistent_aux_bytes,io_bytes\n"
+                      << algorithm << ',' << n << ',' << d << ','
+                      << (algorithm == "baseline" ? 0 : config.br) << ','
+                      << (algorithm == "baseline" ? 0 : config.bc) << ',' << config.threads << ','
+                      << scratch_bytes << ",0," << io_bytes << '\n';
+            return 0;
+        }
         if (input_bytes > static_cast<std::size_t>(std::numeric_limits<std::streamsize>::max()))
             throw std::overflow_error("Input file is too large");
         std::ifstream input(argv[3], std::ios::binary | std::ios::ate);

@@ -1,7 +1,17 @@
 # CPU attention
 
 Part A: a single-thread FP32 baseline and an independent FP64 NumPy reference.
+Part B: blocked materialized attention with SIMD and OpenMP query-block workers.
+Part C: streaming attention with online softmax, packed K tiles, independent
+worker scratch, API tests, and explicit memory accounting.
 Computes `softmax(Q K^T / sqrt(d)) V` with one head and no mask.
+
+The local integration is based on upstream `8551797` (7 November 2026).
+Start with the [C handoff](docs/member_c_submission.md) for contribution ownership
+and portable commands, or the [integration record](docs/integration_2026-11-08.md)
+for checks against the current A/B implementations. With dependencies installed,
+`bash scripts/run_member_c.sh` builds and validates all three families and runs
+a small comparison using the shared `bench.py`.
 
 ## Run
 
@@ -46,6 +56,9 @@ and the Clang ablation flags. For `OPENMP=1`, run `brew install libomp`; the
 Makefile then adds `-Xpreprocessor -fopenmp -lomp`. On x86 CPUs with AVX-512,
 `make OPENMP=1 bench-width` compares 256- and 512-bit vectors (`VEC_WIDTH=512`
 switches the main build). ARM NEON is fixed at 128 bits, so this target is x86-only.
+An existing libomp installation can be selected with `LIBOMP=/opt/anaconda3`
+on this Mac; the previous `OMP_PREFIX` variable remains an alias. `PYTHON` may
+point to an interpreter whose path contains spaces.
 
 ## Benchmark ladder
 
@@ -72,8 +85,8 @@ make OPENMP=1 bench-scaling                # 1, 2, 4, ... cores on 512x64 and 40
 
 `--threads` takes a list such as `1,2,4,8`, and `--shapes 512x64,4096x64` picks
 shapes. Each run records `OMP_PLACES`/`OMP_PROC_BIND` per row and saves machine
-details to `<csv>.machine.json`. See `docs/task4-threading.md` for the design,
-false sharing, load balance and results.
+details to `<csv>.machine.json`. See [C's design notes](docs/member_c.md) for its
+worker ownership and scratch layout, and the integration record for actual checks.
 
 ## Automated tile tuning
 
@@ -106,9 +119,9 @@ or hardware. Tuning requires at least one compiled optimized kernel.
 
 The reference converts the exact FP32 inputs to FP64. Each element must satisfy `abs(O - Oref) <= 1e-4 + 1e-3*abs(Oref)`; NaN/Inf fail. Tests cover known outputs, random inputs, tails and concentrated distributions. CSV rows name the actual kernel and configuration. Timed rows include its workspace size, quartiles and raw samples.
 
-On 11 October 2026, 21 baseline cases, 198 Python online-recurrence checks and the sanitized suite passed. Maximum baseline absolute error was 8.28e-6. B/C correctness checks require their implementations.
+Historical Part A record (11 October 2026): 21 baseline cases, 198 Python online-recurrence checks and the sanitized suite passed. Maximum baseline absolute error was 8.28e-6. Current joint A/B/C validation is recorded separately in the integration record.
 
-Recorded environment: Apple M4, macOS 26.6.2, Apple Clang 21.0.0, Python 3.12.14, NumPy 2.3.5. Flags are in Makefile. Timing follows correctness checks, uses preallocated buffers, five warm-ups and 15 samples, and excludes allocation, validation, I/O and batch calibration. Samples are per-call milliseconds with reused buffers; scheduling and frequency are OS-controlled. These are initial measurements.
+Historical Part A environment: Apple M4, macOS 26.6.2, Apple Clang 21.0.0, Python 3.12.14, NumPy 2.3.5. Flags are in Makefile. Timing follows correctness checks, uses preallocated buffers, five warm-ups and 15 samples, and excludes allocation, validation, I/O and batch calibration. Samples are per-call milliseconds with reused buffers; scheduling and frequency are OS-controlled. These are initial measurements, not current joint results.
 
 [Attention Is All You Need](https://arxiv.org/abs/1706.03762), Section 3.2.1; [Online normalizer calculation for softmax](https://arxiv.org/abs/1805.02867), Algorithm 3.
 
