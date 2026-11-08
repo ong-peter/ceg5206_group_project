@@ -118,7 +118,7 @@ def invalid_inputs(binary, directory, algorithm, settings):
               ("1", "1", b""), ("1", "1", bytes(16)),
               ("1", "1", np.array([np.nan, 0, 0], dtype=np.float32).tobytes()),
               ("1", "1", np.array([np.inf, 0, 0], dtype=np.float32).tobytes())]
-    if algorithm == "baseline":
+    if algorithm in ("baseline", "streaming"):
         trials.append(("1", "1", np.array([3e38, 3e38, 1], dtype=np.float32).tobytes()))
     for n, d, data in trials:
         source.write_bytes(data)

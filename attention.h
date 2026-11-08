@@ -28,7 +28,7 @@ void attention_baseline(const float* q, const float* k, const float* v,
                         const AttentionConfig& config = {});
 
 // B: add blocked.cpp with attention_blocked_scratch and attention_blocked.
-// C: add streaming.cpp with attention_streaming_scratch and attention_streaming.
+// C: streaming.cpp implements streaming with optional OpenMP query-block workers.
 // Makefile detects these files; ./attention --list shows compiled kernels.
 // Scratch queries return total floats, including packing and all workers.
 // The runner allocates exactly that size before timing, with no extra n*n buffer.
@@ -39,6 +39,11 @@ void attention_blocked(const float* q, const float* k, const float* v,
                        const AttentionConfig& config);
 std::size_t attention_streaming_scratch(std::size_t n, std::size_t d,
                                        const AttentionConfig& config);
+// Effective R=min(br,n), C=min(bc,n), W=min(threads,ceil(n/R)).
+// Scratch floats = W*(R*C + R*d + 2*R + C*d + (W>1 ? 32 : 0)).
+// Includes a transposed K panel and a 128-byte gap per worker for W>1.
+// No persistent auxiliary storage; packing is included in each kernel call.
+// Without OpenMP, requests for threads>1 throw before touching buffers.
 void attention_streaming(const float* q, const float* k, const float* v,
                          float* out, float* scratch, std::size_t n, std::size_t d,
                          const AttentionConfig& config);
