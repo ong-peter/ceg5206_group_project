@@ -53,7 +53,7 @@ NOVEC_BUILD_FLAGS = $(COMPILE) $(NOVEC_FLAGS) $(LDFLAGS)
 # x86 SIMD-width comparison binaries (bench-width).
 WIDTH_COMPILE = $(CXX) $(CPPFLAGS) $(MODULE_FLAGS) $(CXXFLAGS) $(call probe,-march=native) $(SIMD_FLAGS)
 
-.PHONY: all attention-flags test test-threads full sanitize tsan clean test-b bench bench-quick bench-scaling bench-width profile-stages plots vec-report test-streaming test-streaming-api
+.PHONY: all attention-flags test test-threads full sanitize tsan clean test-b bench bench-quick bench-scaling bench-width profile-stages packing-experiment plots vec-report test-streaming test-streaming-api
 all: attention
 
 # Rebuild when flags change (e.g. OPENMP=1 after a default build).
@@ -116,6 +116,12 @@ bench-width: attention-w256 attention-w512
 # Instrumented temporary copies only; never used as benchmark timings.
 profile-stages:
 	"$(PYTHON)" scripts/profile_stages.py $(TILE_ARG) --csv results/stages.csv
+
+# Blocked-kernel design experiment (PV loop order, K packing): builds four variants with
+# these flags, tunes each, then interleaved timing on all 12 shapes. Use OPENMP=1 for threads.
+packing-experiment:
+	"$(PYTHON)" scripts/packing_experiment.py --cxx="$(CXX)" \
+		--cxxflags="$(CPPFLAGS) $(CXXFLAGS) $(ARCH_FLAGS) $(SIMD_FLAGS)" --ldflags="$(LDFLAGS) $(LDLIBS)"
 
 # Report figures in plots/ from ladder.csv, scaling.csv, tuning-results.csv and results/stages.csv.
 plots:

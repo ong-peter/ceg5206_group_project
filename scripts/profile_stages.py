@@ -147,7 +147,8 @@ double profile_ms(ProfileClock::time_point start) {
     source = replace_once(source, point, """        profile_stage_ms[1] += profile_ms(profile_start);
         profile_start = ProfileClock::now();
 """ + point)
-    point = "                        oi[f] += weight * vj[f];\n                }\n            }\n        }\n"
+    # After the #endif closing the PV loop-order choice, so either order is timed.
+    point = "                        oi[f] += weight * vj[f];\n                }\n            }\n        }\n#endif\n"
     return replace_once(source, point, point + "        profile_stage_ms[2] += profile_ms(profile_start);\n")
 
 

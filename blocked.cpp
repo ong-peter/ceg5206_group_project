@@ -10,6 +10,14 @@
 #include <omp.h>
 #endif
 
+// PV loop order: key tiles outside query rows, so each V tile is reused across
+// the query block (5-19% faster, bitwise identical output; see
+// scripts/packing_experiment.py). -DBLOCKED_ORIGINAL_PV restores the row-by-row
+// order for that comparison. -DBLOCKED_PACK_K is the K-packing experiment.
+#ifndef BLOCKED_ORIGINAL_PV
+#define BLOCKED_REORDER_PV
+#endif
+
 namespace {
 std::size_t checked_square(std::size_t n) {
     if (!n || n > std::numeric_limits<std::size_t>::max() / n)
@@ -26,12 +34,85 @@ void validate(std::size_t n, std::size_t d, const AttentionConfig& config) {
         throw std::invalid_argument("Multithreading requires an OpenMP build (make OPENMP=1)");
 #endif
 }
+
+#ifdef BLOCKED_PACK_K
+// Packing experiment (off by default): transpose each K tile into the worker's
+// panel, then compute eight scores at once so one Q value feeds eight
+// independent accumulators. Repacked for every query block; included in the call.
+void packed_scores(const float* q, const float* k, float* scratch, float* packed,
+                   std::size_t n, std::size_t d, std::size_t i0, std::size_t iend,
+                   std::size_t bc, float scale) {
+    for (std::size_t j0 = 0; j0 < n; j0 += bc) {
+        const std::size_t columns = std::min(bc, n - j0);
+        for (std::size_t f = 0; f < d; ++f)
+            for (std::size_t j = 0; j < columns; ++j)
+                packed[f * bc + j] = k[(j0 + j) * d + f];
+        for (std::size_t i = i0; i < iend; ++i) {
+            const float* qi = q + i * d;
+            float* si = scratch + i * n + j0;
+            std::size_t j = 0;
+            for (; j + 8 <= columns; j += 8) {
+                float s[8] = {};
+                for (std::size_t f = 0; f < d; ++f) {
+                    const float a = qi[f];
+                    const float* b = packed + f * bc + j;
+                    ATTN_SIMD
+                    for (int l = 0; l < 8; ++l)
+                        s[l] += a * b[l];
+                }
+                for (int l = 0; l < 8; ++l)
+                    si[j + l] = s[l] * scale;
+            }
+            for (; j < columns; ++j) {
+                const float* kj = k + (j0 + j) * d;
+                float acc = 0.0f;
+                ATTN_SIMD_SUM(acc)
+                for (std::size_t f = 0; f < d; ++f)
+                    acc += qi[f] * kj[f];
+                si[j] = acc * scale;
+            }
+        }
+    }
+}
+#endif
+
+#ifdef BLOCKED_REORDER_PV
+// Default PV: key tiles outside, query rows inside, so each V tile is reused
+// across the query block while it is cached. Each output element still
+// accumulates keys in ascending order: bitwise identical to the row-by-row order.
+void reordered_values(const float* scratch, const float* v, float* out, std::size_t n,
+                      std::size_t d, std::size_t i0, std::size_t iend, std::size_t bc) {
+    for (std::size_t i = i0; i < iend; ++i)
+        std::fill(out + i * d, out + (i + 1) * d, 0.0f);
+    for (std::size_t j0 = 0; j0 < n; j0 += bc) {
+        const std::size_t jend = j0 + std::min(bc, n - j0);
+        for (std::size_t i = i0; i < iend; ++i) {
+            float* oi = out + i * d;
+            const float* si = scratch + i * n;
+            for (std::size_t j = j0; j < jend; ++j) {
+                const float weight = si[j];
+                const float* vj = v + j * d;
+                ATTN_SIMD
+                for (std::size_t f = 0; f < d; ++f)
+                    oi[f] += weight * vj[f];
+            }
+        }
+    }
+}
+#endif
 }
 
 std::size_t attention_blocked_scratch(std::size_t n, std::size_t d,
                                      const AttentionConfig& config) {
     validate(n, d, config);
+#ifdef BLOCKED_PACK_K
+    // Plus one transposed min(Bc, N) x d K panel per worker.
+    const std::size_t rows = std::min(n, config.br), columns = std::min(n, config.bc);
+    const std::size_t workers = std::min(config.threads, 1 + (n - 1) / rows);
+    return checked_square(n) + workers * columns * d;
+#else
     return checked_square(n); // Full FP32 probability / score matrix; no packing buffers.
+#endif
 }
 
 void attention_blocked(const float* q, const float* k, const float* v,
@@ -50,6 +131,15 @@ void attention_blocked(const float* q, const float* k, const float* v,
         const std::size_t iend = i0 + std::min(br, n - i0);
         // QK^T: cache-block both query and key rows. A contiguous feature reduction
         // computes each dot product; K rows are reused across the query tile.
+#ifdef BLOCKED_PACK_K
+        std::size_t worker = 0;
+#ifdef _OPENMP
+        // Static schedule: only threads below the block count receive blocks.
+        worker = static_cast<std::size_t>(omp_get_thread_num());
+#endif
+        const std::size_t columns = std::min(bc, n);
+        packed_scores(q, k, scratch, scratch + n * n + worker * columns * d, n, d, i0, iend, columns, scale);
+#else
         for (std::size_t jb = 0; jb < n / bc + (n % bc != 0); ++jb) {
             const std::size_t j0 = jb * bc;
             const std::size_t jend = j0 + std::min(bc, n - j0);
@@ -67,6 +157,7 @@ void attention_blocked(const float* q, const float* k, const float* v,
                 }
             }
         }
+#endif
         // Stable row-wise softmax, in place: n*n scratch is retained.
         for (std::size_t i = i0; i < iend; ++i) {
             float* si = scratch + i * n;
@@ -82,6 +173,9 @@ void attention_blocked(const float* q, const float* k, const float* v,
         }
         // PV: block keys, accumulate on contiguous FP32 feature lanes.
         // No additional workspace; includes non-multiple-of-tile tails.
+#ifdef BLOCKED_REORDER_PV
+        reordered_values(scratch, v, out, n, d, i0, iend, bc);
+#else
         for (std::size_t i = i0; i < iend; ++i) {
             float* oi = out + i * d;
             std::fill(oi, oi + d, 0.0f);
@@ -98,5 +192,6 @@ void attention_blocked(const float* q, const float* k, const float* v,
                 }
             }
         }
+#endif
     }
 }

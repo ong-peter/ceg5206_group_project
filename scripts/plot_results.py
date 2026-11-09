@@ -5,12 +5,14 @@ Inputs (each figure is skipped when its CSV is missing):
   --scaling  bench.py --threads 1,2,4,... --shapes .. (make OPENMP=1 bench-scaling -> scaling.csv)
   --tuning   check.py --tune                          (tuning-results.csv, with tuned-tiles.json)
   --stages   scripts/profile_stages.py                (results/stages.csv)
+  --packing  scripts/packing_experiment.py            (results/packing_experiment/packing_experiment.csv)
 
 Figures written to --out:
   runtime_vs_n.png         median time per call against N, one panel per d, 1 thread, IQR bars
   scratch_vs_n.png         allocated kernel scratch against N, with Q/K/V/O bytes for reference
   peak_rss_vs_n.png        process peak RSS against N (ladder.csv from a bench.py with peak_rss_bytes)
   stage_breakdown.png      per-stage share of one call: QK^T, softmax, PV; streaming's fused split
+  packing_experiment.png   blocked variants (PV order, K packing) over the original, per shape and thread count
   speedup_1thread.png      blocked and streaming speedup over the baseline, every shape, 1 thread
   vectorization.png        no-vec ablation: SIMD gain per family, tiling gain without SIMD
   thread_scaling.png       speedup over the same kernel at 1 thread, one panel per shape
@@ -183,13 +185,13 @@ def memory_vs_n(ladder, out, column="scratch_bytes", ylabel="Allocated scratch (
     plt.close(fig)
 
 
-def grouped_bars(ax, groups, series, values, labels):
+def grouped_bars(ax, groups, series, values, labels, colors=None):
     """Bars grouped by `groups`, one bar per series with a small surface gap."""
     width = 0.8 / len(series)
     for i, name in enumerate(series):
         xs = [g + (i - (len(series) - 1) / 2) * width for g in range(len(groups))]
         ax.bar(xs, [values.get((group, name), math.nan) for group in groups], width * 0.92,
-               color=FAMILIES[name][1], label=labels[name])
+               color=(colors or {})[name] if colors else FAMILIES[name][1], label=labels[name])
     ax.set_xticks(range(len(groups)))
     ax.axhline(1, color=INK_3, linewidth=1, linestyle="--", zorder=0)
 
@@ -236,6 +238,35 @@ def vectorization(ladder, out, d):
     fig.savefig(out)
     plt.close(fig)
     return True
+
+
+# Blocked-kernel variants (categorical slots 7, 6, 5), apart from the family colors.
+VARIANT_COLORS = {"pack": "#6250d6", "reorder": "#008300", "reorder+pack": "#e87ba4"}
+VARIANT_LABELS = {"pack": "Packed K", "reorder": "Reordered PV (default)", "reorder+pack": "Reordered PV + packed K"}
+
+
+def packing_experiment(rows, out):
+    threads = sorted({r["threads"] for r in rows})
+    shapes = sorted({(r["n"], r["d"]) for r in rows})
+    variants = [v for v in VARIANT_COLORS if any(r["variant"] == v for r in rows)]
+    fig, axes = plt.subplots(len(threads), 1, figsize=(max(6, 0.75 * len(shapes)), 2.9 * len(threads)),
+                             squeeze=False, sharey=True, layout="constrained")
+    for ax, t in zip(axes[:, 0], threads):
+        values = {((r["n"], r["d"]), r["variant"]): r["speedup_vs_original"] for r in rows if r["threads"] == t}
+        grouped_bars(ax, shapes, variants, values, VARIANT_LABELS, VARIANT_COLORS)
+        ax.set_xticklabels([shape(*s) for s in shapes], rotation=45 if len(shapes) > 6 else 0,
+                           ha="right" if len(shapes) > 6 else "center")
+        used = {r["variant"]: f"{r['br']}×{r['bc']}" for r in rows if r["threads"] == t}
+        tiles = (f"all at {next(iter(used.values()))}" if len(set(used.values())) == 1 else
+                 "tiles " + ", ".join(f"{name} {tile}" for name, tile in used.items()))
+        ax.set_title(f"{t} thread{'s' if t > 1 else ''}; {tiles}", color=INK, loc="left")
+        ax.set_ylabel("Speedup over original (×)")
+    axes[-1][0].set_xlabel("Shape N×d")
+    handles = [plt.Rectangle((0, 0), 1, 1, color=VARIANT_COLORS[v], label=VARIANT_LABELS[v]) for v in variants]
+    handles.append(plt.Line2D([], [], color=INK_3, linewidth=1, linestyle="--", label="Original blocked (1×)"))
+    fig.legend(handles=handles, loc="outside upper center", ncol=len(handles))
+    fig.savefig(out)
+    plt.close(fig)
 
 
 def thread_scaling(scaling, out):
@@ -362,6 +393,7 @@ def main():
     parser.add_argument("--tuning", type=Path, default=Path("tuning-results.csv"))
     parser.add_argument("--tiles", type=Path, default=Path("tuned-tiles.json"), help="Selected tiles to outline")
     parser.add_argument("--stages", type=Path, default=Path("results/stages.csv"))
+    parser.add_argument("--packing", type=Path, default=Path("results/packing_experiment/packing_experiment.csv"))
     parser.add_argument("--ablation-d", type=int, default=64, help="Feature dimension of the ablation shapes")
     parser.add_argument("--out", type=Path, default=Path("plots"))
     args = parser.parse_args()
@@ -399,6 +431,11 @@ def main():
         save("stage_breakdown.png", stage_breakdown, stages)
     else:
         print(f"Skipping stage breakdown: {args.stages} not found (scripts/profile_stages.py)")
+    packing = read(args.packing)
+    if packing:
+        save("packing_experiment.png", packing_experiment, packing)
+    else:
+        print(f"Skipping packing experiment: {args.packing} not found (make OPENMP=1 packing-experiment)")
     for path in written:
         print(f"Saved {path}")
 

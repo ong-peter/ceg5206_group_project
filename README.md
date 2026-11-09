@@ -127,6 +127,36 @@ packing and online update+PV. Outputs are checked against the FP64 reference.
 Timers add overhead, so the instrumented total is reported with the stages;
 use `bench.py` for timings. `--shapes` picks other shapes.
 
+### Blocked kernel design: PV loop order and K packing
+
+```sh
+make OPENMP=1 packing-experiment   # results/packing_experiment/
+```
+
+The blocked kernel's PV loop runs key tiles outside query rows, so each V tile
+is reused across the query block. Each output element still adds keys in the
+same order, so results are bitwise identical to the row-by-row order
+(`-DBLOCKED_ORIGINAL_PV`). Packing K into a transposed panel with eight score
+accumulators (`-DBLOCKED_PACK_K`, one `min(Bc,N)×d` panel per worker) is
+measured but not adopted. These are design choices, not tuning parameters:
+tuning uses d=64 shapes only, and packing's effect depends on d.
+
+`scripts/packing_experiment.py` builds four variants (original, pack, reorder,
+reorder+pack) with the Makefile's flags, tunes each, checks them against the
+reference, and times them in interleaved rounds on all 12 shapes at 1 thread
+and physical cores. At small N with many threads, tuned tiles can leave fewer
+query blocks than threads, so also compare with `--fixed-tiles 32x32`.
+First result (i7-11700K, 9 November 2026), speedup over the original:
+
+| Variant | d = 32 | d = 64 | d = 128 |
+| --- | --- | --- | --- |
+| Reordered PV (default) | 1.01-1.07 | 1.08-1.14 (N ≥ 512) | 1.09-1.18 |
+| Packed K | 1.12-1.27 | 1.01-1.05 | 0.94-0.96 |
+| Both | 1.18-1.27 | 1.11-1.17 (N ≥ 512) | 1.03-1.10 |
+
+Ranges exclude N = 128 at 8 threads, where tuned tiles differ in query-block
+count; at N = 128, d = 64 every variant is within 4% of the original.
+
 ### Plots
 
 ```sh
