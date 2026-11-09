@@ -31,4 +31,4 @@ jobs:
         run: make sanitize
 
       - name: Validate all shapes
-        run: python check.py --algorithm all --full --tiles
+        run: python test/check.py --algorithm all --full --tiles
