@@ -1,0 +1,6 @@
+2026-11-09T07:14:53Z
+Linux omen 7.0.0-42-generic #42-Ubuntu SMP PREEMPT_DYNAMIC Thu Oct 15 08:06:44 UTC 2026 x86_64 GNU/Linux
+Ubuntu clang version 21.1.8 (6ubuntu1)
+toolchain=clang OMP_TOOL_LIBRARIES=/usr/lib/llvm-21/lib/libarcher.so
+flags=-DWITH_BLOCKED -DWITH_STREAMING -std=c++17 -Wall -Wextra -march=native -fopenmp-simd -fopenmp -O1 -g -fsanitize=thread -fno-omit-frame-pointer -L/usr/lib/llvm-21/lib -Wl,-rpath,/usr/lib/llvm-21/lib
+threads=2 3 8 16 64  api=1 check.py --algorithm all --tiles
