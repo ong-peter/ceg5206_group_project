@@ -17,7 +17,9 @@ since each query row is computed entirely by one worker in the same order.
 OMP_PLACES/OMP_PROC_BIND are recorded per row, and machine details are saved
 next to the CSV as <csv>.machine.json. Every variant is checked against the FP64
 reference before timing. Rounds interleave variants so slow drifts in system
-conditions affect them all; samples from all rounds are pooled.
+conditions affect them all; samples from all rounds are pooled. Each variant's
+process peak RSS is taken from one extra untimed run (peak_rss_bytes), as a
+supplement to the kernel's allocated scratch_bytes.
 """
 import argparse
 import csv
@@ -31,7 +33,7 @@ import tempfile
 
 import numpy as np
 
-from check import errors, inputs, load_tiles, reference, run
+from check import errors, inputs, load_tiles, options, reference, run
 
 
 def physical_cores():
@@ -96,6 +98,32 @@ def shape_list(text):
 
 def kernels(binary):
     return subprocess.run([str(binary), "--list"], capture_output=True, text=True, check=True).stdout.split()
+
+
+def peak_rss(binary, directory, n, d, algorithm, settings):
+    """Peak resident set of one untimed run, measured by /usr/bin/time.
+
+    Covers input, output and scratch buffers plus the C++/OpenMP runtime and
+    thread stacks; a supplementary measure next to the kernel's scratch bytes.
+    Reuses the input file written by the preceding correctness run. A direct
+    wait4 from Python is wrong on Linux: ru_maxrss keeps the pre-exec high-water
+    mark, i.e. this Python process with its FP64 references. time is a small
+    fresh process, so its child starts near 1.5 MiB. Returns "" if time is absent.
+    """
+    darwin = platform.system() == "Darwin"
+    if not Path("/usr/bin/time").exists():
+        return ""
+    command = ["/usr/bin/time", *(["-l"] if darwin else ["-f", "peak_rss_kib=%M"]),
+               str(binary), str(n), str(d), str(directory / "input.bin"), str(directory / "rss.bin"), "0",
+               *options(algorithm, settings)]
+    stderr = subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True,
+                            check=True).stderr
+    for line in stderr.splitlines():
+        if darwin and line.strip().endswith("maximum resident set size"):
+            return int(line.split()[0])  # bytes on macOS
+        if line.startswith("peak_rss_kib="):
+            return int(line.partition("=")[2]) * 1024
+    raise RuntimeError(f"Could not read peak RSS from /usr/bin/time: {stderr[-200:]}")
 
 
 def main():
@@ -171,7 +199,7 @@ def main():
     machine_path.write_text(json.dumps(machine_info(info["vec"].get("flags", "c++").split()[0] or "c++"), indent=2) + "\n")
     fields = ["n", "d", "stage", "algorithm", "build", "vectorized", "br", "bc", "threads",
               "median_ms", "q1_ms", "q3_ms", "speedup_vs_baseline", "speedup_vs_1_thread",
-              "gflops", "scratch_bytes", "io_bytes", "max_abs_error", "rel_frobenius_error",
+              "gflops", "scratch_bytes", "io_bytes", "peak_rss_bytes", "max_abs_error", "rel_frobenius_error",
               "samples", "omp_env", "build_flags", "samples_ms"]
     with tempfile.TemporaryDirectory() as temporary, args.csv.open("w", newline="") as handle:
         directory = Path(temporary)
@@ -180,7 +208,7 @@ def main():
         for n, d in shapes:
             q, k, v = inputs(n, d, n + d)
             expected = reference(q, k, v)
-            outputs, metrics, samples, meta = {}, {}, {}, {}
+            outputs, metrics, samples, meta, rss = {}, {}, {}, {}, {}
             for variant in variants:
                 _, algorithm, build, threads = variant
                 settings = (*tile(algorithm), threads)
@@ -189,6 +217,7 @@ def main():
                 if not metrics[variant][2]:
                     raise RuntimeError(f"Correctness failure before timing: {variant} at {n}x{d}")
                 outputs[variant], samples[variant] = actual, []
+                rss[variant] = peak_rss(binaries[build], directory, n, d, algorithm, settings)
             for variant, actual in outputs.items():
                 # Same kernel and build at one thread (ablation rows are a different build).
                 matches = [other for other in outputs if other[0] != "ablation"
@@ -223,7 +252,7 @@ def main():
                            speedup_vs_baseline=baseline / median,
                            speedup_vs_1_thread=single / median if single else "",
                            gflops=flops / (median * 1e6), scratch_bytes=meta[variant]["scratch_bytes"],
-                           io_bytes=meta[variant]["io_bytes"], max_abs_error=metrics[variant][0],
+                           io_bytes=meta[variant]["io_bytes"], peak_rss_bytes=rss[variant], max_abs_error=metrics[variant][0],
                            rel_frobenius_error=metrics[variant][1], samples=len(values), omp_env=omp_env if threads > 1 else "",
                            build_flags=info[build].get("flags", "unknown").strip(),
                            samples_ms=";".join(f"{x:.6g}" for x in values))
@@ -233,7 +262,9 @@ def main():
                 thread_note = f"  {row['speedup_vs_1_thread']:.2f}x vs 1T" if single else ""
                 print(f"  {label} {median:10.3f} ms  IQR {row['q1_ms']:.3f}-{row['q3_ms']:.3f}  "
                       f"{row['speedup_vs_baseline']:6.2f}x vs baseline  {row['gflops']:6.2f} GFLOP/s"
-                      f"  scratch {int(row['scratch_bytes']) / 2**20:8.2f} MiB{thread_note}", flush=True)
+                      f"  scratch {int(row['scratch_bytes']) / 2**20:8.2f} MiB"
+                      + (f"  peak RSS {row['peak_rss_bytes'] / 2**20:7.1f} MiB" if row["peak_rss_bytes"] != "" else "")
+                      + thread_note, flush=True)
     print(f"\nSaved {args.csv} and {machine_path}", flush=True)
 
 

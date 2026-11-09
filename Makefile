@@ -53,7 +53,7 @@ NOVEC_BUILD_FLAGS = $(COMPILE) $(NOVEC_FLAGS) $(LDFLAGS)
 # x86 SIMD-width comparison binaries (bench-width).
 WIDTH_COMPILE = $(CXX) $(CPPFLAGS) $(MODULE_FLAGS) $(CXXFLAGS) $(call probe,-march=native) $(SIMD_FLAGS)
 
-.PHONY: all attention-flags test test-threads full sanitize tsan clean test-b bench bench-quick bench-scaling bench-width vec-report test-streaming test-streaming-api
+.PHONY: all attention-flags test test-threads full sanitize tsan clean test-b bench bench-quick bench-scaling bench-width profile-stages plots vec-report test-streaming test-streaming-api
 all: attention
 
 # Rebuild when flags change (e.g. OPENMP=1 after a default build).
@@ -111,6 +111,15 @@ bench-scaling: attention
 # x86 AVX-512 CPUs: compare 256- and 512-bit vectors on the optimized kernels.
 bench-width: attention-w256 attention-w512
 	"$(PYTHON)" bench.py --binary ./attention-w256 --extra-binary w512=./attention-w512 $(TILE_ARG) --csv width.csv
+
+# Per-stage time (QK^T / softmax / PV, streaming's fused split) on 512x64 and 4096x64, 1 thread.
+# Instrumented temporary copies only; never used as benchmark timings.
+profile-stages:
+	"$(PYTHON)" scripts/profile_stages.py $(TILE_ARG) --csv results/stages.csv
+
+# Report figures in plots/ from ladder.csv, scaling.csv, tuning-results.csv and results/stages.csv.
+plots:
+	"$(PYTHON)" scripts/plot_results.py --out plots
 
 # Which loops vectorized (GCC -fopt-info / Clang -Rpass remarks).
 vec-report:

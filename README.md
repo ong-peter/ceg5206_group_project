@@ -108,6 +108,42 @@ shapes. Each run records `OMP_PLACES`/`OMP_PROC_BIND` per row and saves machine
 details to `<csv>.machine.json`. See [C's design notes](docs/member_c.md) for its
 worker ownership and scratch layout, and the integration record for actual checks.
 
+`ladder.csv` also has `peak_rss_bytes`: the process peak resident set of one
+extra untimed run per variant, measured with `/usr/bin/time` (GNU `-f %M` on
+Linux, `-l` on macOS; empty if unavailable). It includes input, output, scratch
+and runtime memory (about 4.5 MiB for small shapes), so it supplements
+`scratch_bytes` rather than replacing it.
+
+### Stage profile
+
+```sh
+make profile-stages   # results/stages.csv: 512x64 and 4096x64, one thread
+```
+
+`scripts/profile_stages.py` times QKᵀ, softmax and PV separately for the
+baseline (its public stage functions) and the blocked kernel (timers in a
+temporary copy of `blocked.cpp`), and splits fused streaming into score+K
+packing and online update+PV. Outputs are checked against the FP64 reference.
+Timers add overhead, so the instrumented total is reported with the stages;
+use `bench.py` for timings. `--shapes` picks other shapes.
+
+### Plots
+
+```sh
+make plots   # PNGs in plots/ from ladder.csv, scaling.csv, tuning-results.csv, results/stages.csv
+```
+
+`scripts/plot_results.py` draws runtime, allocated scratch and process peak RSS
+against N (one panel per d), single-thread speedup over the baseline for every
+shape, the no-vec ablation (SIMD gain per family, and tiling gain with SIMD
+disabled), thread scaling against ideal, the tuning grid relative to 32x32 with
+the selected tiles outlined, and the per-stage breakdown. Figures whose CSV is
+missing are skipped; paths can be changed with `--ladder`, `--scaling`,
+`--tuning`, `--tiles`, `--stages` and `--out`. Run `make OPENMP=1 bench` (all 12
+shapes plus the ablation), `make OPENMP=1 bench-scaling` and
+`make profile-stages` first. Scratch is allocated capacity, not measured memory
+traffic.
+
 ## Automated tile tuning
 
 Once `blocked.cpp` or `streaming.cpp` is implemented and compiled, run:
