@@ -53,7 +53,7 @@ NOVEC_BUILD_FLAGS = $(COMPILE) $(NOVEC_FLAGS) $(LDFLAGS)
 # x86 SIMD-width comparison binaries (bench-width).
 WIDTH_COMPILE = $(CXX) $(CPPFLAGS) $(MODULE_FLAGS) $(CXXFLAGS) $(call probe,-march=native) $(SIMD_FLAGS)
 
-.PHONY: all attention-flags test test-threads full sanitize clean test-b bench bench-quick bench-scaling bench-width vec-report test-streaming test-streaming-api
+.PHONY: all attention-flags test test-threads full sanitize tsan clean test-b bench bench-quick bench-scaling bench-width vec-report test-streaming test-streaming-api
 all: attention
 
 # Rebuild when flags change (e.g. OPENMP=1 after a default build).
@@ -123,6 +123,11 @@ sanitize:
 	"$(PYTHON)" check.py --binary ./attention-sanitize --algorithm all --tiles
 	$(CXX) $(CPPFLAGS) $(ARCH_FLAGS) $(SIMD_FLAGS) $(CXXFLAGS) -O1 -g -fsanitize=$(SANITIZERS) -fno-sanitize-recover=all -fno-omit-frame-pointer -I. attention.cpp streaming.cpp tests/streaming_test.cpp $(LDFLAGS) $(LDLIBS) -o streaming-test-sanitize
 	./streaming-test-sanitize
+
+# ThreadSanitizer on the OpenMP kernels: Clang + Archer when available, else GCC.
+# Separate binaries in results/tsan_<time>/; THREADS, API=0, FULL=1, TOOLCHAIN pass through.
+tsan:
+	PYTHON="$(PYTHON)" bash scripts/tsan_check.sh
 
 clean:
 	rm -f attention attention-novec attention-w256 attention-w512 attention-sanitize streaming-test streaming-test-sanitize .build-flags

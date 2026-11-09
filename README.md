@@ -28,6 +28,7 @@ python -c "import sys, numpy; print(sys.executable); print(sys.version); print('
 export PYTHON="$CONDA_PREFIX/bin/python"
 make test       # Available kernels and edge/tile checks
 make sanitize   # AddressSanitizer and UndefinedBehaviorSanitizer
+make tsan       # ThreadSanitizer on the OpenMP kernels (see Data races)
 make full       # All 12 core shapes and edge cases; errors in results.csv
 ```
 
@@ -38,6 +39,25 @@ and d in {32, 64, 128} with `--full`, otherwise (128, 64) and (512, 64).
 Timing is done by `bench.py` (see Benchmark ladder) and by tile tuning.
 
 Interface notes are in `attention.h`; test options: `"$PYTHON" check.py --help`.
+
+### Data races (ThreadSanitizer)
+
+```sh
+make tsan                    # or: bash scripts/tsan_check.sh
+make tsan THREADS="2 7" API=0
+```
+
+Results go to `results/tsan_<time>/triage.txt`; the exit status is non-zero on
+failures or reports that need review. `scripts/tsan_check.sh` builds separate TSan binaries of the OpenMP kernels and runs the C
+API test and `check.py --tiles` at the `make test-threads` thread counts in
+parallel. It prefers Clang with LLVM libomp and Archer (on Ubuntu,
+`apt install clang-21 libomp-21-dev`), which makes OpenMP synchronization
+visible to TSan, so any report is a finding. Without them it falls back to GCC;
+libgomp then produces fork/join false positives, which `scripts/tsan_triage.py`
+separates from reports that need review. Set `TOOLCHAIN=clang|gcc` to force one,
+`THREADS="2 7"` to choose thread counts, `API=0` to skip the API test (hours
+under GCC), and `FULL=1` for all 12 core shapes. The TSan build does not affect
+`attention` or the benchmarks, which keep the default compiler.
 
 ## Build flags and vectorization
 
