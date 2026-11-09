@@ -53,7 +53,7 @@ NOVEC_BUILD_FLAGS = $(COMPILE) $(NOVEC_FLAGS) $(LDFLAGS)
 # x86 SIMD-width comparison binaries (bench-width).
 WIDTH_COMPILE = $(CXX) $(CPPFLAGS) $(MODULE_FLAGS) $(CXXFLAGS) $(call probe,-march=native) $(SIMD_FLAGS)
 
-.PHONY: all attention-flags test test-threads full sanitize tsan clean test-b bench bench-quick bench-scaling bench-width profile-stages packing-experiment plots vec-report test-streaming test-streaming-api
+.PHONY: all attention-flags test test-threads full sanitize tsan clean test-b bench bench-quick bench-scaling bench-width profile-stages packing-experiment perf-profile benchmark plots vec-report test-streaming test-streaming-api
 all: attention
 
 # Rebuild when flags change (e.g. OPENMP=1 after a default build).
@@ -95,18 +95,21 @@ full: attention
 # Cumulative comparison: baseline -> blocked -> streaming -> threads, plus no-vec ablation.
 # Use OPENMP=1 for the threaded stages.
 # Tuned tiles from check.py --tune are used automatically when present.
+# Every timing target pins threads to physical cores and interleaves ROUNDS rounds.
 TILE_ARG = $(if $(wildcard tuned-tiles.json),--tile-config tuned-tiles.json)
+ROUNDS ?= 3
+PIN = OMP_PLACES=cores OMP_PROC_BIND=close
 bench: attention attention-novec
-	"$(PYTHON)" bench.py --full --novec-binary ./attention-novec $(TILE_ARG) --csv ladder.csv
+	$(PIN) "$(PYTHON)" bench.py --full --novec-binary ./attention-novec $(TILE_ARG) --rounds $(ROUNDS) --csv ladder.csv
 
 bench-quick: attention attention-novec
-	"$(PYTHON)" bench.py --novec-binary ./attention-novec $(TILE_ARG) --csv ladder.csv
+	$(PIN) "$(PYTHON)" bench.py --novec-binary ./attention-novec $(TILE_ARG) --rounds $(ROUNDS) --csv ladder.csv
 
 # Thread scaling (Task 4): 1, 2, 4, ... up to physical cores, threads pinned to cores.
 bench-scaling: attention
 	@./attention --build-info | grep -q openmp=1 || { echo "Rebuild with: make clean && make OPENMP=1"; exit 1; }
-	OMP_PLACES=cores OMP_PROC_BIND=close "$(PYTHON)" bench.py --threads $(SCALING_THREADS) \
-		--shapes 512x64,4096x64 --rounds 3 $(TILE_ARG) --csv scaling.csv
+	$(PIN) "$(PYTHON)" bench.py --threads $(SCALING_THREADS) \
+		--shapes 512x64,4096x64 --rounds $(ROUNDS) $(TILE_ARG) --csv scaling.csv
 
 # x86 AVX-512 CPUs: compare 256- and 512-bit vectors on the optimized kernels.
 bench-width: attention-w256 attention-w512
@@ -121,7 +124,16 @@ profile-stages:
 # these flags, tunes each, then interleaved timing on all 12 shapes. Use OPENMP=1 for threads.
 packing-experiment:
 	"$(PYTHON)" scripts/packing_experiment.py --cxx="$(CXX)" \
-		--cxxflags="$(CPPFLAGS) $(CXXFLAGS) $(ARCH_FLAGS) $(SIMD_FLAGS)" --ldflags="$(LDFLAGS) $(LDLIBS)"
+		--cxxflags="$(CPPFLAGS) $(CXXFLAGS) $(ARCH_FLAGS) $(SIMD_FLAGS)" --ldflags="$(LDFLAGS) $(LDLIBS)" $(PACKING_ARGS)
+
+# Hardware counters per call (perf, Linux) on 512x64 and 4096x64.
+perf-profile: attention
+	"$(PYTHON)" scripts/perf_profile.py $(TILE_ARG) --threads 1,$(CORES) --csv results/perf_counters.csv
+
+# Final run of every experiment into results/benchmark_<time>/ (prepare the machine first:
+# docs/benchmarking.md). ROUNDS, THREADS, OUT, STRICT, PERF and PACKING pass through.
+benchmark:
+	PYTHON="$(PYTHON)" bash scripts/run_benchmarks.sh
 
 # Report figures in plots/ from ladder.csv, scaling.csv, tuning-results.csv and results/stages.csv.
 plots:

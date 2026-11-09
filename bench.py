@@ -56,6 +56,13 @@ def build_info(binary):
     return dict(line.split("=", 1) for line in out.splitlines() if "=" in line)
 
 
+def read_text(path):
+    try:
+        return Path(path).read_text().strip()
+    except OSError:
+        return "unavailable"
+
+
 def command(*arguments):
     try:
         return subprocess.run(arguments, capture_output=True, text=True, check=True).stdout.strip()
@@ -74,8 +81,16 @@ def machine_info(compiler):
         info["sysctl"] = {key: command("sysctl", "-n", key) for key in keys}
     else:
         info["lscpu"] = command("lscpu")
-        governor = Path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
-        info["governor"] = governor.read_text().strip() if governor.exists() else "unavailable"
+        info["governor"] = read_text("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
+        # Frequency policy: turbo on/off, energy preference, Ubuntu power profile, current clocks.
+        info["frequency_driver"] = read_text("/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver")
+        info["intel_no_turbo"] = read_text("/sys/devices/system/cpu/intel_pstate/no_turbo")
+        info["cpufreq_boost"] = read_text("/sys/devices/system/cpu/cpufreq/boost")
+        info["energy_performance_preference"] = read_text(
+            "/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference")
+        info["power_profile"] = command("powerprofilesctl", "get") or "unavailable"
+        info["scaling_max_khz"] = read_text("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq")
+        info["load_average"] = read_text("/proc/loadavg")
     return info
 
 

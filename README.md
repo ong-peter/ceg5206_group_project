@@ -30,7 +30,11 @@ make test       # Available kernels and edge/tile checks
 make sanitize   # AddressSanitizer and UndefinedBehaviorSanitizer
 make tsan       # ThreadSanitizer on the OpenMP kernels (see Data races)
 make full       # All 12 core shapes and edge cases; errors in results.csv
+make benchmark  # Every experiment, in order, into results/benchmark_<time>/
 ```
+
+Before `make benchmark`, prepare the machine (fixed CPU frequency, idle) and run
+the smoke test `make benchmark QUICK=1`: see the [benchmarking guide](docs/benchmarking.md).
 
 Setting `PYTHON` ensures Make uses the same interpreter as the active Conda
 environment. For another environment, set `PYTHON` to its Python executable.
@@ -87,6 +91,10 @@ make clean && make OPENMP=1 bench-quick   # (512, 64) and (2048, 64)
 make OPENMP=1 bench                       # all 12 core shapes
 ```
 
+Both pin threads to physical cores (`OMP_PLACES=cores OMP_PROC_BIND=close`) and
+interleave `ROUNDS` rounds (default 3), as does `bench-scaling`. For the final
+results use `make benchmark`, which runs every step below in order.
+
 `bench.py` compares stages cumulatively on the same inputs: 1 (baseline),
 1+2 (blocked), 1+2+3 (streaming), and 1+2+4 / 1+2+3+4 (threaded, physical cores
 by default), plus a 1-thread no-vectorization ablation of every family. It
@@ -126,6 +134,18 @@ temporary copy of `blocked.cpp`), and splits fused streaming into score+K
 packing and online update+PV. Outputs are checked against the FP64 reference.
 Timers add overhead, so the instrumented total is reported with the stages;
 use `bench.py` for timings. `--shapes` picks other shapes.
+
+### Hardware counters
+
+```sh
+make OPENMP=1 perf-profile   # results/perf_counters.csv (Linux perf)
+```
+
+`scripts/perf_profile.py` reports, per kernel call on 512x64 and 4096x64: cycles,
+IPC, effective GHz, L1D miss rate, LLC misses, counted single-precision FLOPs
+(about 1.02-1.05× the 4N²d model, which excludes softmax) and the vector share,
+plus DRAM read/write bytes when `perf_event_paranoid` is 0. Each configuration
+runs with and without timed repeats; the difference removes setup costs.
 
 ### Blocked kernel design: PV loop order and K packing
 
