@@ -11,7 +11,19 @@ Start with the [C handoff](docs/member_c_submission.md) for contribution ownersh
 and portable commands, or the [integration record](docs/integration_2026-11-08.md)
 for checks against the current A/B implementations. With dependencies installed,
 `bash scripts/run_member_c.sh` builds and validates all three families and runs
-a small comparison using the shared `bench.py`.
+a small comparison using the shared `scripts/bench.py`.
+
+## Layout
+
+| Path | Contents |
+| --- | --- |
+| `src/` | Kernels (`attention.cpp` baseline, `blocked.cpp`, `streaming.cpp`), interface (`attention.h`), SIMD hints (`simd.h`) and the runner (`main.cpp`) |
+| `src/benchmarks/` | Frozen pre-optimization streaming kernel and its historical comparison driver; not part of the normal build |
+| `test/` | `check.py` (FP64 reference, correctness, tile tuning) and the streaming API test |
+| `scripts/` | `bench.py` and the benchmark, profiling, plotting, sanitizer and packaging scripts |
+| `docs/` | Proposal, design notes, integration record and the [benchmarking guide](docs/benchmarking.md) |
+
+Run every command from the repository root; build outputs and results are written there.
 
 ## Run
 
@@ -38,11 +50,11 @@ the smoke test `make benchmark QUICK=1`: see the [benchmarking guide](docs/bench
 
 Setting `PYTHON` ensures Make uses the same interpreter as the active Conda
 environment. For another environment, set `PYTHON` to its Python executable.
-`check.py` checks correctness only: core shapes are N in {128, 512, 2048, 4096}
+`test/check.py` checks correctness only: core shapes are N in {128, 512, 2048, 4096}
 and d in {32, 64, 128} with `--full`, otherwise (128, 64) and (512, 64).
-Timing is done by `bench.py` (see Benchmark ladder) and by tile tuning.
+Timing is done by `scripts/bench.py` (see Benchmark ladder) and by tile tuning.
 
-Interface notes are in `attention.h`; test options: `"$PYTHON" check.py --help`.
+Interface notes are in `src/attention.h`; test options: `"$PYTHON" test/check.py --help`.
 
 ### Data races (ThreadSanitizer)
 
@@ -53,7 +65,7 @@ make tsan THREADS="2 7" API=0
 
 Results go to `results/tsan_<time>/triage.txt`; the exit status is non-zero on
 failures or reports that need review. `scripts/tsan_check.sh` builds separate TSan binaries of the OpenMP kernels and runs the C
-API test and `check.py --tiles` at the `make test-threads` thread counts in
+API test and `test/check.py --tiles` at the `make test-threads` thread counts in
 parallel. It prefers Clang with LLVM libomp and Archer (on Ubuntu,
 `apt install clang-21 libomp-21-dev`), which makes OpenMP synchronization
 visible to TSan, so any report is a finding. Without them it falls back to GCC;
@@ -67,7 +79,7 @@ under GCC), and `FULL=1` for all 12 core shapes. The TSan build does not affect
 
 Every kernel, the baseline included, is built with `-O3` and `-march=native`
 (`-mcpu=native` on ARM), so they all share ISA settings; use `ARCH_FLAGS=` for a
-portable build. `-fopenmp-simd` enables the `omp simd` loop hints in `simd.h`
+portable build. `-fopenmp-simd` enables the `omp simd` loop hints in `src/simd.h`
 without needing the OpenMP runtime, so single-thread builds vectorize the dot
 product reduction too. `make OPENMP=1` adds threading. A flag change triggers
 a rebuild, and `./attention --build-info` prints the flags the binary was built
@@ -95,7 +107,7 @@ Both pin threads to physical cores (`OMP_PLACES=cores OMP_PROC_BIND=close`) and
 interleave `ROUNDS` rounds (default 3), as does `bench-scaling`. For the final
 results use `make benchmark`, which runs every step below in order.
 
-`bench.py` compares stages cumulatively on the same inputs: 1 (baseline),
+`scripts/bench.py` compares stages cumulatively on the same inputs: 1 (baseline),
 1+2 (blocked), 1+2+3 (streaming), and 1+2+4 / 1+2+3+4 (threaded, physical cores
 by default), plus a 1-thread no-vectorization ablation of every family. It
 checks each variant against the FP64 reference before timing it. The output,
@@ -130,10 +142,10 @@ make profile-stages   # results/stages.csv: 512x64 and 4096x64, one thread
 
 `scripts/profile_stages.py` times QKᵀ, softmax and PV separately for the
 baseline (its public stage functions) and the blocked kernel (timers in a
-temporary copy of `blocked.cpp`), and splits fused streaming into score+K
+temporary copy of `src/blocked.cpp`), and splits fused streaming into score+K
 packing and online update+PV. Outputs are checked against the FP64 reference.
 Timers add overhead, so the instrumented total is reported with the stages;
-use `bench.py` for timings. `--shapes` picks other shapes.
+use `scripts/bench.py` for timings. `--shapes` picks other shapes.
 
 ### Hardware counters
 
@@ -196,10 +208,10 @@ traffic.
 
 ## Automated tile tuning
 
-Once `blocked.cpp` or `streaming.cpp` is implemented and compiled, run:
+Once `src/blocked.cpp` or `src/streaming.cpp` is implemented and compiled, run:
 
 ```sh
-python check.py --algorithm all --tune --tiles --csv tuning-results.csv
+python test/check.py --algorithm all --tune --tiles --csv tuning-results.csv
 make OPENMP=1 bench   # picks up tuned-tiles.json
 ```
 

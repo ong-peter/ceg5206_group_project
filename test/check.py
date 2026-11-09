@@ -202,10 +202,10 @@ def load_tiles(path, parser):
 
 def main():
     # After make, test B or C with --algorithm blocked or streaming.
-    # Example: python3 check.py --algorithm blocked --full --tiles --br 32 --bc 64
+    # Example: python3 test/check.py --algorithm blocked --full --tiles --br 32 --bc 64
     # --algorithm all keeps baseline single-threaded; missing kernels fail.
     # --tiles sweeps edge cases; core shapes use the chosen Br/Bc pair.
-    # Correctness only, apart from --tune; benchmark with bench.py.
+    # Correctness only, apart from --tune; benchmark with scripts/bench.py.
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary", default="./attention")
     parser.add_argument("--algorithm", choices=("baseline", "blocked", "streaming", "all"), default="baseline")

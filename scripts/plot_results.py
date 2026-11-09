@@ -1,16 +1,16 @@
 """Plot the benchmark CSVs for the report.
 
 Inputs (each figure is skipped when its CSV is missing):
-  --ladder   bench.py --full --novec-binary ...       (make OPENMP=1 bench -> ladder.csv)
-  --scaling  bench.py --threads 1,2,4,... --shapes .. (make OPENMP=1 bench-scaling -> scaling.csv)
-  --tuning   check.py --tune                          (tuning-results.csv, with tuned-tiles.json)
+  --ladder   scripts/bench.py --full --novec-binary ...       (make OPENMP=1 bench -> ladder.csv)
+  --scaling  scripts/bench.py --threads 1,2,4,... --shapes .. (make OPENMP=1 bench-scaling -> scaling.csv)
+  --tuning   test/check.py --tune                     (tuning-results.csv, with tuned-tiles.json)
   --stages   scripts/profile_stages.py                (results/stages.csv)
   --packing  scripts/packing_experiment.py            (results/packing_experiment/packing_experiment.csv)
 
 Figures written to --out:
   runtime_vs_n.png         median time per call against N, one panel per d, 1 thread, IQR bars
   scratch_vs_n.png         allocated kernel scratch against N, with Q/K/V/O bytes for reference
-  peak_rss_vs_n.png        process peak RSS against N (ladder.csv from a bench.py with peak_rss_bytes)
+  peak_rss_vs_n.png        process peak RSS against N (ladder.csv from scripts/bench.py)
   stage_breakdown.png      per-stage share of one call: QK^T, softmax, PV; streaming's fused split
   packing_experiment.png   blocked variants (PV order, K packing) over the original, per shape and thread count
   speedup_1thread.png      blocked and streaming speedup over the baseline, every shape, 1 thread
@@ -425,7 +425,7 @@ def main():
         tiles = json.loads(args.tiles.read_text())["selected"] if args.tiles.exists() else {}
         save("tile_tuning.png", tile_tuning, tuning, tiles)
     else:
-        print(f"Skipping tile tuning: {args.tuning} not found (check.py --algorithm all --tune)")
+        print(f"Skipping tile tuning: {args.tuning} not found (test/check.py --algorithm all --tune)")
     stages = read(args.stages)
     if stages:
         save("stage_breakdown.png", stage_breakdown, stages)

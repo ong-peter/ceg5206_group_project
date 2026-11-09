@@ -27,7 +27,7 @@ fi
     exit 1
 }
 rounds="${ROUNDS:-3}"
-cores="$("$PYTHON" -c 'from bench import physical_cores; print(physical_cores())')"
+cores="$("$PYTHON" -c 'import sys; sys.path.insert(0, "scripts"); from bench import physical_cores; print(physical_cores())')"
 threads="${THREADS:-$cores}"
 scaling="$("$PYTHON" -c "c=$threads; print(','.join(str(t) for t in sorted({c, *(2**i for i in range(c.bit_length()) if 2**i < c)})))")"
 quick="${QUICK:-0}"
@@ -94,21 +94,21 @@ make "${build[@]}" attention attention-novec
 ./attention --build-info | tee "$out/build-info.txt"
 
 step "Correctness gate: all 12 shapes, edge cases and tile sweep; thread invariance"
-"$PYTHON" check.py --algorithm all "${correctness[@]}" --tiles --csv "$out/correctness.csv" | tail -1
+"$PYTHON" test/check.py --algorithm all "${correctness[@]}" --tiles --csv "$out/correctness.csv" | tail -1
 make "${build[@]}" test-threads
 
 step "Tile tuning (one thread, 9 pairs on 512x64 and 2048x64)"
-"$PYTHON" check.py --algorithm all --tune --tiles --csv "$out/tuning-results.csv" \
+"$PYTHON" test/check.py --algorithm all --tune --tiles --csv "$out/tuning-results.csv" \
     --tuning-output "$out/tuned-tiles.json" | grep -E 'Selected|passed'
 tiles=(--tile-config "$out/tuned-tiles.json")
 
 pin=(env OMP_PLACES=cores OMP_PROC_BIND=close)
-step "Ladder: 12 shapes, every family, $threads threads, no-vec ablation, $rounds rounds"
-"${pin[@]}" "$PYTHON" bench.py "${ladder[@]}" --novec-binary ./attention-novec "${tiles[@]}" --threads "$threads" \
+step "Ladder (${ladder[*]}): every family, $threads threads, no-vec ablation, $rounds rounds"
+"${pin[@]}" "$PYTHON" scripts/bench.py "${ladder[@]}" --novec-binary ./attention-novec "${tiles[@]}" --threads "$threads" \
     --rounds "$rounds" --csv "$out/ladder.csv"
 
 step "Thread scaling: $scaling threads on $scaling_shapes"
-"${pin[@]}" "$PYTHON" bench.py --threads "$scaling" --shapes "$scaling_shapes" "${tiles[@]}" \
+"${pin[@]}" "$PYTHON" scripts/bench.py --threads "$scaling" --shapes "$scaling_shapes" "${tiles[@]}" \
     --rounds "$rounds" --csv "$out/scaling.csv"
 
 step "Memory report (allocated scratch and Q/K/V/O bytes)"

@@ -12,7 +12,7 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "test"))
 from check import inputs, reference
 import numpy as np
 
@@ -105,10 +105,10 @@ int main(int argc, char** argv) {
     with tempfile.TemporaryDirectory() as tmp:
         temp=Path(tmp)
         (temp/"profile.cpp").write_text(driver)
-        for name,path in [("original","benchmarks/streaming_original.cpp"),("optimized","streaming.cpp")]:
+        for name,path in [("original","src/benchmarks/streaming_original.cpp"),("optimized","src/streaming.cpp")]:
             (temp/"instrumented.cpp").write_text(instrument((ROOT/path).read_text()))
             binary=temp/f"profile-{name}"
-            subprocess.run([*compiler,"-O3","-std=c++17","-I",str(ROOT),str(temp/"profile.cpp"),str(temp/"instrumented.cpp"),"-o",str(binary)],check=True)
+            subprocess.run([*compiler,"-O3","-std=c++17","-I",str(ROOT/"src"),str(temp/"profile.cpp"),str(temp/"instrumented.cpp"),"-o",str(binary)],check=True)
             for n,d in [(512,64),(2048,64)]:
                 q,k,v=inputs(n,d,n+d)
                 np.concatenate([q.ravel(),k.ravel(),v.ravel()]).tofile(temp/"inputs.bin")

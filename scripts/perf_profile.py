@@ -24,7 +24,7 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "test"))
 from bench import shape_list  # noqa: E402
 from check import inputs, options  # noqa: E402
 import numpy as np  # noqa: E402
@@ -58,7 +58,7 @@ def perf_stat(events, command, system_wide=False):
 
 
 def calls(stdout):
-    """Kernel calls made by main.cpp: 2 checks, 5 warm-ups, batch calibration, repeats x batch."""
+    """Kernel calls made by src/main.cpp: 2 checks, 5 warm-ups, batch calibration, repeats x batch."""
     if not stdout.strip():
         return 2
     row = next(csv.DictReader(io.StringIO(stdout)))
@@ -82,7 +82,7 @@ def main():
     parser.add_argument("--binary", type=Path, default=Path("./attention"))
     parser.add_argument("--shapes", type=shape_list, default=[(512, 64), (4096, 64)])
     parser.add_argument("--threads", default="1", help="Comma-separated thread counts for blocked/streaming")
-    parser.add_argument("--tile-config", type=Path, help="Tuned tiles from check.py --tune (default 32x32)")
+    parser.add_argument("--tile-config", type=Path, help="Tuned tiles from test/check.py --tune (default 32x32)")
     parser.add_argument("--repeats", type=int, default=15)
     parser.add_argument("--csv", type=Path, default=Path("results/perf_counters.csv"))
     args = parser.parse_args()

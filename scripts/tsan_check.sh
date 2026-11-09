@@ -82,10 +82,10 @@ esac
 arch="$("$cxx" -march=native -Werror -x c++ -c /dev/null -o /dev/null >/dev/null 2>&1 && echo -march=native || true)"
 flags=(-DWITH_BLOCKED -DWITH_STREAMING -std=c++17 -Wall -Wextra $arch -fopenmp-simd -fopenmp
        -O1 -g -fsanitize=thread -fno-omit-frame-pointer "${omp_flags[@]}")
-"$cxx" "${flags[@]}" attention.cpp main.cpp blocked.cpp streaming.cpp -o "$out/bin/attention-tsan"
-"$cxx" "${flags[@]}" -I. attention.cpp streaming.cpp tests/streaming_test.cpp -o "$out/bin/streaming-test-tsan"
+"$cxx" "${flags[@]}" src/attention.cpp src/main.cpp src/blocked.cpp src/streaming.cpp -o "$out/bin/attention-tsan"
+"$cxx" "${flags[@]}" -Isrc src/attention.cpp src/streaming.cpp test/streaming_test.cpp -o "$out/bin/streaming-test-tsan"
 
-cores="$("$PYTHON" -c 'from bench import physical_cores; print(physical_cores())' 2>/dev/null || echo 4)"
+cores="$("$PYTHON" -c 'import sys; sys.path.insert(0, "scripts"); from bench import physical_cores; print(physical_cores())' 2>/dev/null || echo 4)"
 logical="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo "$cores")"
 threads="${THREADS:-$(printf '%s\n' 2 3 "$cores" "$logical" 64 | sort -nu | tr '\n' ' ')}"
 check_options=(--algorithm all --tiles)
@@ -96,7 +96,7 @@ check_options=(--algorithm all --tiles)
     "$cxx" --version | head -1
     echo "toolchain=$toolchain OMP_TOOL_LIBRARIES=${OMP_TOOL_LIBRARIES:-unset}"
     echo "flags=${flags[*]}"
-    echo "threads=$threads api=${API:-1} check.py ${check_options[*]}"
+    echo "threads=$threads api=${API:-1} test/check.py ${check_options[*]}"
 } > "$out/environment.txt"
 cat "$out/environment.txt"
 
@@ -108,7 +108,7 @@ if [[ "${API:-1}" != 0 ]]; then
     pids+=($!) names+=(api)
 fi
 for t in $threads; do
-    TSAN_OPTIONS="$tsan log_path=$out/reports/check_t$t" "$PYTHON" check.py \
+    TSAN_OPTIONS="$tsan log_path=$out/reports/check_t$t" "$PYTHON" test/check.py \
         --binary "$out/bin/attention-tsan" "${check_options[@]}" --threads "$t" > "$out/check_t$t.log" 2>&1 &
     pids+=($!) names+=("check_t$t")
 done

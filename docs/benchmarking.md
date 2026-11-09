@@ -107,10 +107,10 @@ Options (environment or `make` variables):
 | --- | --- | --- |
 | Preflight: frequency policy, load, git commit, compiler, CPU | | `environment.txt`, `uncommitted.patch`, `run.log` |
 | Clean OpenMP build, vectorized and no-vec | `make OPENMP=1 attention attention-novec` | `build-info.txt` |
-| Correctness gate: 12 shapes, edge cases, tile sweep; identical output at 2-64 threads | `check.py --full --tiles`, `make test-threads` | `correctness.csv` |
-| Tile tuning: 9 pairs on 512x64 and 2048x64, one thread | `check.py --tune` | `tuning-results.csv`, `tuned-tiles.json` |
-| Ladder: 12 shapes, three families at 1 thread, threaded stages, no-vec ablation | `bench.py --full` | `ladder.csv`, `ladder.machine.json` |
-| Thread scaling: 1, 2, 4, ... threads on 512x64 and 4096x64 | `bench.py --threads` | `scaling.csv`, `scaling.machine.json` |
+| Correctness gate: 12 shapes, edge cases, tile sweep; identical output at 2-64 threads | `test/check.py --full --tiles`, `make test-threads` | `correctness.csv` |
+| Tile tuning: 9 pairs on 512x64 and 2048x64, one thread | `test/check.py --tune` | `tuning-results.csv`, `tuned-tiles.json` |
+| Ladder: 12 shapes, three families at 1 thread, threaded stages, no-vec ablation | `scripts/bench.py --full` | `ladder.csv`, `ladder.machine.json` |
+| Thread scaling: 1, 2, 4, ... threads on 512x64 and 4096x64 | `scripts/bench.py --threads` | `scaling.csv`, `scaling.machine.json` |
 | Allocated memory per algorithm and shape | `scripts/memory_report.py` | `memory.csv` |
 | Stage profile: QKᵀ, softmax, PV per call, 512x64 and 4096x64 | `scripts/profile_stages.py` | `stages.csv` |
 | Hardware counters per call, 512x64 and 4096x64, 1 and all threads | `scripts/perf_profile.py` | `perf_counters.csv` |
@@ -155,7 +155,7 @@ variant's process peak RSS. Sanitizer builds are never timed.
 | `make plots` | `plots/` from the files above |
 | `make tsan` | ThreadSanitizer check (not a timing run) |
 
-Run `python check.py --algorithm all --tune --tiles --csv tuning-results.csv`
+Run `python test/check.py --algorithm all --tune --tiles --csv tuning-results.csv`
 first so these targets use tuned tiles.
 
 ## 8. Reading the results

@@ -1,7 +1,7 @@
 """Per-stage time of each family on one small and one large shape (single thread).
 
 Baseline: QK^T, softmax and PV are separate public functions, timed around each call.
-Blocked: stages are interleaved per query block, so a temporary copy of blocked.cpp
+Blocked: stages are interleaved per query block, so a temporary copy of src/blocked.cpp
 is instrumented with timers that accumulate over blocks. Streaming fuses its stages;
 it is split into score+packing and online update+PV with profile_streaming.py's
 instrumentation. Timers add overhead; the instrumented total is reported next to
@@ -19,7 +19,7 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "test"))
 from check import inputs, reference  # noqa: E402
 from profile_streaming import instrument as instrument_streaming, replace_once  # noqa: E402
 import numpy as np  # noqa: E402
@@ -160,7 +160,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--shapes", type=shape_list, default=[(512, 64), (4096, 64)],
                         help="Small and large shapes (default: 512x64,4096x64)")
-    parser.add_argument("--tile-config", type=Path, help="Tuned tiles from check.py --tune (default 32x32)")
+    parser.add_argument("--tile-config", type=Path, help="Tuned tiles from test/check.py --tune (default 32x32)")
     parser.add_argument("--repeats", type=int, default=15)
     parser.add_argument("--csv", type=Path, default=Path("results/stages.csv"))
     args = parser.parse_args()
@@ -168,18 +168,18 @@ def main():
     compiler = shlex.split(os.environ.get("CXX", "c++"))
     arch = ["-march=native"] if subprocess.run([*compiler, "-march=native", "-Werror", "-x", "c++", "-c",
                                                  os.devnull, "-o", os.devnull], capture_output=True).returncode == 0 else []
-    flags = ["-O3", "-std=c++17", *arch, "-fopenmp-simd", "-I", str(ROOT)]
+    flags = ["-O3", "-std=c++17", *arch, "-fopenmp-simd", "-I", str(ROOT / "src")]
     rows = []
     with tempfile.TemporaryDirectory() as temporary:
         temp = Path(temporary)
         (temp / "driver.cpp").write_text(DRIVER)
-        (temp / "blocked.cpp").write_text(instrument_blocked((ROOT / "blocked.cpp").read_text()))
-        (temp / "streaming.cpp").write_text(instrument_streaming((ROOT / "streaming.cpp").read_text()))
+        (temp / "blocked.cpp").write_text(instrument_blocked((ROOT / "src" / "blocked.cpp").read_text()))
+        (temp / "streaming.cpp").write_text(instrument_streaming((ROOT / "src" / "streaming.cpp").read_text()))
         sources = {"baseline": [], "blocked": [temp / "blocked.cpp"], "streaming": [temp / "streaming.cpp"]}
         for algorithm, extra in sources.items():
             binary = temp / f"profile-{algorithm}"
             subprocess.run([*compiler, *flags, f"-DPROFILE_{algorithm.upper()}", str(temp / "driver.cpp"),
-                            str(ROOT / "attention.cpp"), *map(str, extra), "-o", str(binary)], check=True)
+                            str(ROOT / "src" / "attention.cpp"), *map(str, extra), "-o", str(binary)], check=True)
         for n, d in args.shapes:
             q, k, v = inputs(n, d, n + d)
             np.concatenate([q.ravel(), k.ravel(), v.ravel()]).tofile(temp / "inputs.bin")

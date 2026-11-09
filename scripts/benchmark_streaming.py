@@ -1,4 +1,4 @@
-"""Historical C-only ablations with fixed flags; use bench.py for integrated A/B/C results."""
+"""Historical C-only ablations with fixed flags; use scripts/bench.py for integrated A/B/C results."""
 import argparse
 import csv
 import hashlib
@@ -14,7 +14,7 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "test"))
 from check import inputs, reference  # Independent FP64 reference, exact FP32 inputs.
 import numpy as np
 
@@ -31,12 +31,12 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     compiler = shlex.split(os.environ.get("CXX", "c++"))
     # Same flags for every variant; single-threaded, no fast-math, no LTO.
-    flags = ["-O3", "-std=c++17", "-Wall", "-Wextra", "-Wpedantic", "-I", str(ROOT)]
+    flags = ["-O3", "-std=c++17", "-Wall", "-Wextra", "-Wpedantic", "-I", str(ROOT / "src")]
     builds = [
-        ("original", "benchmarks/streaming_original.cpp", ["-Dattention_streaming=attention_original", "-Dattention_streaming_scratch=attention_original_scratch"]),
-        ("rescale_only", "streaming.cpp", ["-DSTREAMING_SCALAR_SCORES", "-Dattention_streaming=attention_rescale_only", "-Dattention_streaming_scratch=attention_rescale_only_scratch"]),
-        ("packed_only", "streaming.cpp", ["-DSTREAMING_ALWAYS_RESCALE", "-Dattention_streaming=attention_packed_only", "-Dattention_streaming_scratch=attention_packed_only_scratch"]),
-        ("optimized", "streaming.cpp", []),
+        ("original", "src/benchmarks/streaming_original.cpp", ["-Dattention_streaming=attention_original", "-Dattention_streaming_scratch=attention_original_scratch"]),
+        ("rescale_only", "src/streaming.cpp", ["-DSTREAMING_SCALAR_SCORES", "-Dattention_streaming=attention_rescale_only", "-Dattention_streaming_scratch=attention_rescale_only_scratch"]),
+        ("packed_only", "src/streaming.cpp", ["-DSTREAMING_ALWAYS_RESCALE", "-Dattention_streaming=attention_packed_only", "-Dattention_streaming_scratch=attention_packed_only_scratch"]),
+        ("optimized", "src/streaming.cpp", []),
     ]
     commands = []
     objects = []
@@ -48,7 +48,7 @@ def main():
             subprocess.run(cmd, check=True, stdout=log, stderr=log)
             objects.append(str(obj))
         binary = output / "compare"
-        cmd = [*compiler, *flags, str(ROOT/"attention.cpp"), str(ROOT/"benchmarks/compare.cpp"), *objects, "-o", str(binary)]
+        cmd = [*compiler, *flags, str(ROOT/"src/attention.cpp"), str(ROOT/"src/benchmarks/compare.cpp"), *objects, "-o", str(binary)]
         commands.append(cmd)
         subprocess.run(cmd, check=True, stdout=log, stderr=log)
     (output / "environment.json").write_text(json.dumps({
@@ -56,7 +56,7 @@ def main():
         "compiler": subprocess.check_output([*compiler, "--version"], text=True),
         "commands": commands, "br": 32, "bc": 32, "threads": 1,
         "source_sha256": {p: hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in
-                          ["attention.cpp", "attention.h", "streaming.cpp", "benchmarks/streaming_original.cpp", "benchmarks/compare.cpp"]},
+                          ["src/attention.cpp", "src/attention.h", "src/streaming.cpp", "src/benchmarks/streaming_original.cpp", "src/benchmarks/compare.cpp"]},
         "affinity": "OS controlled", "frequency": "OS controlled", "cache": "repeated warm calls",
     }, indent=2) + "\n")
     shapes = list(itertools.product((128,512,2048,4096),(32,64,128))) if args.full else [(128,64),(512,64),(2048,64)]

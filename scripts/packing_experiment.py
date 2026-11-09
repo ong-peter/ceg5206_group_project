@@ -1,6 +1,6 @@
 """Blocked-kernel design experiment: PV loop order and K packing.
 
-Builds four variants of the blocked kernel, tunes each with check.py --tune
+Builds four variants of the blocked kernel, tunes each with test/check.py --tune
 (nine Br/Bc pairs on 512x64 and 2048x64), checks each against the FP64 reference,
 then times them in interleaved rounds at each variant's own selected tiles:
   original      row-by-row PV           (-DBLOCKED_ORIGINAL_PV)
@@ -30,7 +30,7 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "test"))
 from bench import physical_cores, shape_list  # noqa: E402
 from check import errors, inputs, reference, run  # noqa: E402
 import numpy as np  # noqa: E402
@@ -85,7 +85,7 @@ def main():
             binaries[name] = temp / f"attention-{name.replace('+', '-')}"
             flags = ["-DWITH_BLOCKED", "-DWITH_STREAMING", *cxxflags, *defines]
             command = [*compiler, *flags, f"-DATTN_BUILD_FLAGS=\"{' '.join(compiler + flags)}\"",
-                       *(str(ROOT / s) for s in ("attention.cpp", "main.cpp", "blocked.cpp", "streaming.cpp")),
+                       *(str(ROOT / "src" / s) for s in ("attention.cpp", "main.cpp", "blocked.cpp", "streaming.cpp")),
                        *ldflags, "-o", str(binaries[name])]
             subprocess.run(command, check=True)
         info = subprocess.run([str(binaries["reorder"]), "--build-info"], capture_output=True, text=True).stdout
@@ -101,7 +101,7 @@ def main():
             if args.fixed_tiles:
                 break
             safe = name.replace("+", "-")
-            subprocess.run([sys.executable, str(ROOT / "check.py"), "--binary", str(binary), "--algorithm", "blocked",
+            subprocess.run([sys.executable, str(ROOT / "test" / "check.py"), "--binary", str(binary), "--algorithm", "blocked",
                             "--tune", "--csv", str(out / f"tune_{safe}.csv"),
                             "--tuning-output", str(out / f"tiles_{safe}.json")],
                            check=True, stdout=subprocess.DEVNULL, cwd=ROOT)

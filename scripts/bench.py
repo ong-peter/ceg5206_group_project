@@ -29,11 +29,13 @@ import os
 import platform
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 
 import numpy as np
 
-from check import errors, inputs, load_tiles, options, reference, run
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "test"))
+from check import errors, inputs, load_tiles, options, reference, run  # noqa: E402
 
 
 def physical_cores():
@@ -152,7 +154,7 @@ def main():
     parser.add_argument("--shapes", type=shape_list, help="Shapes such as 512x64,4096x64 (overrides --full)")
     parser.add_argument("--br", type=int, default=32)
     parser.add_argument("--bc", type=int, default=32)
-    parser.add_argument("--tile-config", type=Path, help="Tuned tiles from check.py --tune")
+    parser.add_argument("--tile-config", type=Path, help="Tuned tiles from test/check.py --tune")
     parser.add_argument("--full", action="store_true", help="All 12 core shapes (default: 512x64, 2048x64)")
     parser.add_argument("--repeats", type=int, default=15, help="Timed samples per variant per round")
     parser.add_argument("--rounds", type=int, default=1, help="Interleaved rounds; samples are pooled")
