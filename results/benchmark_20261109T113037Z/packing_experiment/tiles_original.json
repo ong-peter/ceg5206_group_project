@@ -1,0 +1,61 @@
+{
+  "selected": {
+    "blocked": {
+      "br": 64,
+      "bc": 32,
+      "threads": 1,
+      "score": 0.992568734170525,
+      "elapsed_seconds": 20.56346756899984
+    }
+  },
+  "shapes": [
+    [
+      512,
+      64
+    ],
+    [
+      2048,
+      64
+    ]
+  ],
+  "candidates": [
+    [
+      16,
+      16
+    ],
+    [
+      16,
+      32
+    ],
+    [
+      16,
+      64
+    ],
+    [
+      32,
+      16
+    ],
+    [
+      32,
+      32
+    ],
+    [
+      32,
+      64
+    ],
+    [
+      64,
+      16
+    ],
+    [
+      64,
+      32
+    ],
+    [
+      64,
+      64
+    ]
+  ],
+  "selection_rule": "minimum geometric mean of median times relative to 32x32 on each shape",
+  "elapsed_seconds": 20.598447126998508
+}

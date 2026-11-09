@@ -1,0 +1,3 @@
+flags=c++  -DWITH_BLOCKED -DWITH_STREAMING -O3 -std=c++17 -Wall -Wextra -Wpedantic -fopenmp -march=native -fopenmp-simd -fopenmp
+openmp=1
+vectorized=1

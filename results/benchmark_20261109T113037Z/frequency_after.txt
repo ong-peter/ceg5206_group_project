@@ -1,0 +1,6 @@
+governor=performance
+intel_no_turbo=1
+cpufreq_boost=unavailable
+energy_performance_preference=performance
+power_profile=performance
+load_average=3.49 2.35 1.80
