@@ -15,7 +15,7 @@ Figures written to --out:
   packing_experiment.png   blocked variants (PV order, K packing) over the original, per shape and thread count
   speedup_1thread.png      blocked and streaming speedup over the baseline, every shape, 1 thread
   vectorization.png        no-vec ablation: SIMD gain per family, tiling gain without SIMD
-  thread_scaling.png       speedup over the same kernel at 1 thread, one panel per shape
+  thread_scaling.png       speedup over the same kernel at 1 thread (IQR bars), one panel per shape
   tile_tuning.png          tuning grid, time relative to 32x32, selected tiles outlined
 Scratch is allocated capacity reported by the kernels, not measured DRAM traffic or RSS.
 """
@@ -287,6 +287,14 @@ def thread_scaling(scaling, out):
                 continue
             xs = [r["threads"] for r in series]
             ys = [1.0 if r["threads"] == 1 else r["speedup_vs_1_thread"] for r in series]
+            # IQR of each thread count's samples, as speedup over the 1-thread median:
+            # [median_1 / q3_T, median_1 / q1_T].
+            one = next((r["median_ms"] for r in series if r["threads"] == 1), None)
+            if one is not None:
+                low = [y - one / r["q3_ms"] for r, y in zip(series, ys)]
+                high = [one / r["q1_ms"] - y for r, y in zip(series, ys)]
+                ax.errorbar(xs, ys, yerr=[low, high], fmt="none", ecolor=FAMILIES[family][1],
+                            elinewidth=1.2, capsize=3, zorder=3)
             ax.plot(xs, ys, color=FAMILIES[family][1], marker="o")
             ends.append((xs[-1], ys[-1], f"{family} {ys[-1]:.1f}×"))
         log2_axis(ax, threads, "Threads")

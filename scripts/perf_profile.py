@@ -5,6 +5,7 @@ twice: with timed repeats and with none. The difference, divided by the extra
 calls, removes input loading, allocation and validation, so every count is per
 kernel call. Counted per process (all threads):
   cache group  cycles, instructions, L1D loads/misses, LLC loads/misses
+  L2 group     L2 requests and misses (Intel l2_rqsts.*; skipped if unsupported)
   FP group     single-precision scalar, 128-bit and 256-bit FP instructions;
                FLOPs = scalar + 4*128b + 8*256b (FMA counts twice in these events)
   DRAM group   uncore_imc data reads/writes, system-wide: needs
@@ -31,6 +32,7 @@ import numpy as np  # noqa: E402
 
 GROUPS = {
     "cache": ["cycles", "instructions", "L1-dcache-loads", "L1-dcache-load-misses", "LLC-loads", "LLC-load-misses"],
+    "l2": ["l2_rqsts.references", "l2_rqsts.miss"],
     "fp": ["fp_arith_inst_retired.scalar_single", "fp_arith_inst_retired.128b_packed_single",
            "fp_arith_inst_retired.256b_packed_single"],
     "dram": ["uncore_imc/data_reads/", "uncore_imc/data_writes/"],
@@ -131,6 +133,9 @@ def main():
                         l1d_miss_rate=per_call["L1-dcache-load-misses"] / per_call["L1-dcache-loads"],
                         llc_loads=per_call["LLC-loads"], llc_misses=per_call["LLC-load-misses"],
                         llc_miss_bytes=64 * per_call["LLC-load-misses"],
+                        l2_references=per_call.get("l2_rqsts.references", ""),
+                        l2_miss_rate=per_call["l2_rqsts.miss"] / per_call["l2_rqsts.references"]
+                        if "l2" in groups and per_call.get("l2_rqsts.references") else "",
                         fp_flops=fp if "fp" in groups else "",
                         vector_flop_share=(1 - per_call["fp_arith_inst_retired.scalar_single"] / fp)
                         if "fp" in groups and fp else "",
