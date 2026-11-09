@@ -32,7 +32,17 @@ import subprocess
 import sys
 import tempfile
 
-import numpy as np
+# With OMP_PLACES/OMP_PROC_BIND set, importing an MKL NumPy (conda) lets Intel's
+# OpenMP runtime pin this Python process to one core. Every timed kernel would
+# inherit that mask and run all its threads on that core, so restore it.
+CPU_MASK = os.sched_getaffinity(0) if hasattr(os, "sched_getaffinity") else None
+
+import numpy as np  # noqa: E402
+
+if CPU_MASK is not None and os.sched_getaffinity(0) != CPU_MASK:
+    print(f"NumPy import narrowed CPU affinity to {sorted(os.sched_getaffinity(0))}; "
+          f"restoring {len(CPU_MASK)} CPUs for the timed kernels", flush=True)
+    os.sched_setaffinity(0, CPU_MASK)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "test"))
 from check import errors, inputs, load_tiles, options, reference, run  # noqa: E402
@@ -75,6 +85,8 @@ def command(*arguments):
 def machine_info(compiler):
     info = dict(platform=platform.platform(), machine=platform.machine(), python=platform.python_version(),
                 physical_cores=physical_cores(), logical_cpus=os.cpu_count(),
+                # CPUs the timed kernels may use (inherited by every child process).
+                cpu_affinity=sorted(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else "unavailable",
                 compiler=command(compiler, "--version").splitlines()[:1],
                 omp_env={key: value for key, value in os.environ.items() if key.startswith(("OMP_", "GOMP_", "KMP_"))})
     if platform.system() == "Darwin":
