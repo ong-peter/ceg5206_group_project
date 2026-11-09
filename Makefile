@@ -21,7 +21,7 @@ ifeq ($(IS_ARM),)
 ARCH_FLAGS += -mprefer-vector-width=$(VEC_WIDTH)
 endif
 endif
-# Honour "omp simd" loop hints (simd.h) without the OpenMP runtime.
+# Honour "omp simd" loop hints (src/simd.h) without the OpenMP runtime.
 SIMD_FLAGS = -fopenmp-simd
 # Vectorization ablation: same flags and ISA, but no auto-vectorization or SIMD hints.
 NOVEC_FLAGS = $(if $(IS_CLANG),-fno-vectorize -fno-slp-vectorize,-fno-tree-vectorize -fno-tree-slp-vectorize) -DATTN_NO_SIMD
@@ -43,9 +43,9 @@ LDFLAGS += -fopenmp
 endif
 endif
 
-SOURCES = attention.cpp main.cpp $(wildcard blocked.cpp streaming.cpp)
-HEADERS = attention.h simd.h
-MODULE_FLAGS = $(if $(wildcard blocked.cpp),-DWITH_BLOCKED) $(if $(wildcard streaming.cpp),-DWITH_STREAMING)
+SOURCES = src/attention.cpp src/main.cpp $(wildcard src/blocked.cpp src/streaming.cpp)
+HEADERS = src/attention.h src/simd.h
+MODULE_FLAGS = $(if $(wildcard src/blocked.cpp),-DWITH_BLOCKED) $(if $(wildcard src/streaming.cpp),-DWITH_STREAMING)
 
 COMPILE = $(CXX) $(CPPFLAGS) $(MODULE_FLAGS) $(CXXFLAGS) $(ARCH_FLAGS)
 BUILD_FLAGS = $(COMPILE) $(SIMD_FLAGS) $(LDFLAGS)
@@ -71,11 +71,11 @@ attention-w256 attention-w512: attention-w%: $(SOURCES) $(HEADERS) Makefile .bui
 	$(WIDTH_COMPILE) -mprefer-vector-width=$* -DATTN_BUILD_FLAGS='"$(WIDTH_COMPILE) -mprefer-vector-width=$* $(LDFLAGS)"' $(SOURCES) $(LDFLAGS) $(LDLIBS) -o $@
 
 test: attention
-	"$(PYTHON)" check.py --algorithm all --tiles
+	"$(PYTHON)" test/check.py --algorithm all --tiles
 
 # Thread correctness: outputs must be bitwise identical to one thread.
 # Covers odd counts, more threads than query blocks, and oversubscription.
-CORES := $(shell "$(PYTHON)" -c "from bench import physical_cores; print(physical_cores())" 2>/dev/null || echo 4)
+CORES := $(shell "$(PYTHON)" -c "import sys; sys.path.insert(0, 'scripts'); from bench import physical_cores; print(physical_cores())" 2>/dev/null || echo 4)
 LOGICAL := $(shell getconf _NPROCESSORS_ONLN 2>/dev/null || echo $(CORES))
 # 1, 2, 4, ... below the physical core count, plus the core count itself.
 SCALING_THREADS ?= $(shell "$(PYTHON)" -c "c=$(CORES); print(','.join(str(t) for t in sorted({c, *(2**i for i in range(c.bit_length()) if 2**i < c)})))")
@@ -84,36 +84,36 @@ test-threads: attention
 	@set -e; log=$$(mktemp); trap 'rm -f "$$log"' EXIT; \
 	for t in 2 3 $(CORES) $(LOGICAL) 64; do \
 		echo "== $$t threads"; \
-		if "$(PYTHON)" check.py --algorithm all --tiles --threads $$t > "$$log" 2>&1; then \
+		if "$(PYTHON)" test/check.py --algorithm all --tiles --threads $$t > "$$log" 2>&1; then \
 			tail -1 "$$log"; else cat "$$log"; exit 1; fi; \
 	done
 
 # Correctness on all 12 core shapes plus edge cases; errors saved to results.csv.
 full: attention
-	"$(PYTHON)" check.py --algorithm all --full --tiles $(TILE_ARG) --csv results.csv
+	"$(PYTHON)" test/check.py --algorithm all --full --tiles $(TILE_ARG) --csv results.csv
 
 # Cumulative comparison: baseline -> blocked -> streaming -> threads, plus no-vec ablation.
 # Use OPENMP=1 for the threaded stages.
-# Tuned tiles from check.py --tune are used automatically when present.
+# Tuned tiles from test/check.py --tune are used automatically when present.
 # Every timing target pins threads to physical cores and interleaves ROUNDS rounds.
 TILE_ARG = $(if $(wildcard tuned-tiles.json),--tile-config tuned-tiles.json)
 ROUNDS ?= 3
 PIN = OMP_PLACES=cores OMP_PROC_BIND=close
 bench: attention attention-novec
-	$(PIN) "$(PYTHON)" bench.py --full --novec-binary ./attention-novec $(TILE_ARG) --rounds $(ROUNDS) --csv ladder.csv
+	$(PIN) "$(PYTHON)" scripts/bench.py --full --novec-binary ./attention-novec $(TILE_ARG) --rounds $(ROUNDS) --csv ladder.csv
 
 bench-quick: attention attention-novec
-	$(PIN) "$(PYTHON)" bench.py --novec-binary ./attention-novec $(TILE_ARG) --rounds $(ROUNDS) --csv ladder.csv
+	$(PIN) "$(PYTHON)" scripts/bench.py --novec-binary ./attention-novec $(TILE_ARG) --rounds $(ROUNDS) --csv ladder.csv
 
 # Thread scaling (Task 4): 1, 2, 4, ... up to physical cores, threads pinned to cores.
 bench-scaling: attention
 	@./attention --build-info | grep -q openmp=1 || { echo "Rebuild with: make clean && make OPENMP=1"; exit 1; }
-	$(PIN) "$(PYTHON)" bench.py --threads $(SCALING_THREADS) \
+	$(PIN) "$(PYTHON)" scripts/bench.py --threads $(SCALING_THREADS) \
 		--shapes 512x64,4096x64 --rounds $(ROUNDS) $(TILE_ARG) --csv scaling.csv
 
 # x86 AVX-512 CPUs: compare 256- and 512-bit vectors on the optimized kernels.
 bench-width: attention-w256 attention-w512
-	"$(PYTHON)" bench.py --binary ./attention-w256 --extra-binary w512=./attention-w512 $(TILE_ARG) --csv width.csv
+	"$(PYTHON)" scripts/bench.py --binary ./attention-w256 --extra-binary w512=./attention-w512 $(TILE_ARG) --csv width.csv
 
 # Per-stage time (QK^T / softmax / PV, streaming's fused split) on 512x64 and 4096x64, 1 thread.
 # Instrumented temporary copies only; never used as benchmark timings.
@@ -141,14 +141,14 @@ plots:
 
 # Which loops vectorized (GCC -fopt-info / Clang -Rpass remarks).
 vec-report:
-	$(COMPILE) $(SIMD_FLAGS) $(VEC_REPORT_FLAGS) -c $(wildcard blocked.cpp streaming.cpp) attention.cpp 2>&1 | \
+	$(COMPILE) $(SIMD_FLAGS) $(VEC_REPORT_FLAGS) -c $(wildcard src/blocked.cpp src/streaming.cpp) src/attention.cpp 2>&1 | \
 		grep -E '\.cpp:[0-9]+' | sort -u | tee vectorization_report.txt
 	@rm -f attention.o blocked.o streaming.o
 
 sanitize:
 	$(CXX) $(CPPFLAGS) $(MODULE_FLAGS) $(ARCH_FLAGS) $(SIMD_FLAGS) $(CXXFLAGS) -O1 -g -fsanitize=$(SANITIZERS) -fno-sanitize-recover=all -fno-omit-frame-pointer $(SOURCES) $(LDFLAGS) $(LDLIBS) -o attention-sanitize
-	"$(PYTHON)" check.py --binary ./attention-sanitize --algorithm all --tiles
-	$(CXX) $(CPPFLAGS) $(ARCH_FLAGS) $(SIMD_FLAGS) $(CXXFLAGS) -O1 -g -fsanitize=$(SANITIZERS) -fno-sanitize-recover=all -fno-omit-frame-pointer -I. attention.cpp streaming.cpp tests/streaming_test.cpp $(LDFLAGS) $(LDLIBS) -o streaming-test-sanitize
+	"$(PYTHON)" test/check.py --binary ./attention-sanitize --algorithm all --tiles
+	$(CXX) $(CPPFLAGS) $(ARCH_FLAGS) $(SIMD_FLAGS) $(CXXFLAGS) -O1 -g -fsanitize=$(SANITIZERS) -fno-sanitize-recover=all -fno-omit-frame-pointer -Isrc src/attention.cpp src/streaming.cpp test/streaming_test.cpp $(LDFLAGS) $(LDLIBS) -o streaming-test-sanitize
 	./streaming-test-sanitize
 
 # ThreadSanitizer on the OpenMP kernels: Clang + Archer when available, else GCC.
@@ -162,12 +162,12 @@ clean:
 
 # B-specific testing. Requires NumPy.
 test-b: attention
-	"$(PYTHON)" check.py --algorithm blocked --tiles
+	"$(PYTHON)" test/check.py --algorithm blocked --tiles
 
 # C-specific API and reference tests, with the same ISA/SIMD flags as A/B.
-test-streaming-api: streaming.cpp attention.cpp $(HEADERS) tests/streaming_test.cpp
-	$(COMPILE) $(SIMD_FLAGS) -I. attention.cpp streaming.cpp tests/streaming_test.cpp $(LDFLAGS) $(LDLIBS) -o streaming-test
+test-streaming-api: src/streaming.cpp src/attention.cpp $(HEADERS) test/streaming_test.cpp
+	$(COMPILE) $(SIMD_FLAGS) -Isrc src/attention.cpp src/streaming.cpp test/streaming_test.cpp $(LDFLAGS) $(LDLIBS) -o streaming-test
 	./streaming-test
 
 test-streaming: attention test-streaming-api
-	"$(PYTHON)" check.py --algorithm streaming --tiles
+	"$(PYTHON)" test/check.py --algorithm streaming --tiles
