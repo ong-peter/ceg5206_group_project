@@ -6,12 +6,9 @@ Part C: streaming attention with online softmax, packed K tiles, independent
 worker scratch, API tests, and explicit memory accounting.
 Computes `softmax(Q K^T / sqrt(d)) V` with one head and no mask.
 
-The local integration is based on upstream `8551797` (7 November 2026).
-Start with the [C handoff](docs/member_c_submission.md) for contribution ownership
-and portable commands, or the [integration record](docs/integration_2026-11-08.md)
-for checks against the current A/B implementations. With dependencies installed,
-`bash scripts/run_member_c.sh` builds and validates all three families and runs
-a small comparison using the shared `scripts/bench.py`.
+Validation, sanitizer and design-experiment results are in the
+[integration record](docs/integration_2026-11-08.md). To reproduce every
+experiment, see the [benchmarking guide](docs/benchmarking.md).
 
 ## Layout
 
