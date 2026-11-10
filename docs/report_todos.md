@@ -118,14 +118,27 @@ The timing experiment interleaves blocked and streaming at `Br=32,64,128,256`,
 `--cache-counters`, each tile also gets a counter profile in `R2/br*/`.
 
 Optional CPU-specific events can be requested after checking `perf list` on
-that machine, for example if these names are supported:
+that machine. On the i7-11700K used here, `l2_rqsts.pf_miss` does not exist
+(there is no direct L2 hardware-prefetch miss event), so use events that
+appear in `perf list`. Start a new clock monitor (e.g. `review_clocks_R2b.txt`),
+then run:
 
 ```bash
 bash scripts/run_review_todos.sh --only R2 --threads 1,8 --cache-counters \
-  --events l2_rqsts.demand_data_rd_miss,l2_rqsts.pf_miss
+  --events l2_rqsts.demand_data_rd_miss,l2_lines_out.useless_hwpf,ocr.hwpf_l2_data_rd.any_response,cycle_activity.stalls_l2_miss \
+  --clock-log results/review_clocks_R2b.txt
 ```
 
-The extra group is skipped and logged if unavailable; inspect
+These cover demand L2 misses, unused L2 hardware prefetches, L2 hardware-prefetch
+requests and L2-miss stalls. Do not repeat events from the standard groups
+(e.g. `l2_rqsts.miss`, `l2_rqsts.references`); the script rejects duplicates. Keep to about four extra events: with hyper-threading enabled
+each core has about four general-purpose counters, and `ocr.*` events share a
+limited set of offcore registers. Check the set first with
+`perf stat -e <events> -- true`.
+
+The extra events are checked as one group: if any name is unsupported, the
+whole group is skipped and logged. Afterwards, confirm `extra_group_present` is
+`true` in each `R2/br*/counter_coverage.json`, then inspect
 `extra_counts_json` and `counters.log`. Choose events for demand, prefetch or
 stalls that the CPU actually supports. The script does not invent unsupported
 event mappings. Compare scratch bytes, runtime, scaling and miss counts. Larger
