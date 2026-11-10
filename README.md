@@ -9,6 +9,8 @@ Computes `softmax(Q K^T / sqrt(d)) V` with one head and no mask.
 Validation, sanitizer and design-experiment results are in the
 [integration record](docs/integration_2026-11-08.md). To reproduce every
 experiment, see the [benchmarking guide](docs/benchmarking.md).
+For the report's R1--R6 follow-up experiments and S1--S6 submission checklist,
+see the [report TODO run guide](docs/report_todos.md).
 
 ## Layout
 

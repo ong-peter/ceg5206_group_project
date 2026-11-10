@@ -13,9 +13,14 @@ kernel call. Counted per process (all threads):
                processes add traffic, so keep the machine idle.
 The working set (scratch + Q/K/V/O bytes) is reported next to the measured
 traffic: allocated storage is not memory traffic. Counter runs are not timing runs.
+median_ms is the cache pass's median, paired with its cycles; the other passes'
+medians are retained separately. ghz_per_thread is an approximate cycle/time
+ratio, not an independent clock measurement (cycles average all extra calls,
+whereas median_ms summarizes timed samples).
 """
 import argparse
 import csv
+from datetime import datetime, timezone
 import io
 import json
 from pathlib import Path
@@ -85,18 +90,34 @@ def main():
     parser.add_argument("--shapes", type=shape_list, default=[(512, 64), (4096, 64)])
     parser.add_argument("--threads", default="1", help="Comma-separated thread counts for blocked/streaming")
     parser.add_argument("--tile-config", type=Path, help="Tuned tiles from test/check.py --tune (default 32x32)")
+    parser.add_argument("--br", type=int, help="Override query tiles for every optimized kernel")
+    parser.add_argument("--bc", type=int, help="Override key tiles for every optimized kernel")
+    parser.add_argument("--extra-events", default="", help="Optional comma-separated CPU-specific perf events")
     parser.add_argument("--repeats", type=int, default=15)
     parser.add_argument("--csv", type=Path, default=Path("results/perf_counters.csv"))
     args = parser.parse_args()
+    if args.repeats <= 0 or any(x is not None and x <= 0 for x in (args.br, args.bc)):
+        parser.error("repeats and tile overrides must be positive")
     if not shutil.which("perf"):
         parser.error("perf not found (Ubuntu: linux-tools-$(uname -r))")
     binary = str(args.binary.resolve())
     tiles = json.loads(args.tile_config.read_text())["selected"] if args.tile_config else {}
-    groups = {name: events for name, events in GROUPS.items() if available(events, name == "dram")}
+    requested = dict(GROUPS)
+    extra_events = list(dict.fromkeys(x.strip() for x in args.extra_events.split(",") if x.strip()))
+    if any(event in sum(GROUPS.values(), []) for event in extra_events):
+        parser.error("extra events must not repeat the standard counter groups")
+    if extra_events:
+        requested["extra"] = extra_events
+    groups = {name: events for name, events in requested.items() if available(events, name == "dram")}
     if "cache" not in groups:
         parser.error("perf cannot count cycles; set kernel.perf_event_paranoid to 1 or lower")
     algorithms = subprocess.run([binary, "--list"], capture_output=True, text=True, check=True).stdout.split()
     thread_counts = [int(t) for t in args.threads.split(",")]
+    if not thread_counts or min(thread_counts) <= 0:
+        parser.error("thread counts must be positive")
+    args.csv.parent.mkdir(parents=True, exist_ok=True)
+    passes_path = args.csv.with_suffix(".passes.jsonl")
+    passes_path.write_text("", encoding="utf-8")
     rows = []
     with tempfile.TemporaryDirectory() as temporary:
         source, target = Path(temporary) / "input.bin", Path(temporary) / "output.bin"
@@ -106,26 +127,44 @@ def main():
             for algorithm in algorithms:
                 for threads in ([1] if algorithm == "baseline" else thread_counts):
                     config = tiles.get(algorithm, {})
-                    settings = (config.get("br", 32), config.get("bc", 32), threads)
+                    settings = (args.br or config.get("br", 32), args.bc or config.get("bc", 32), threads)
                     base = [binary, str(n), str(d), str(source), str(target)]
                     flags = options(algorithm, settings)
                     memory = next(csv.DictReader(io.StringIO(subprocess.run(
                         [binary, str(n), str(d), "--memory", *flags], capture_output=True, text=True,
                         check=True).stdout)))
-                    per_call, median_ms = {}, None
+                    per_call, pass_median_ms = {}, {}
                     for name, events in groups.items():
+                        started = datetime.now(timezone.utc).isoformat()
                         full, stdout = perf_stat(events, [*base, str(args.repeats), *flags], name == "dram")
+                        timed_finished = datetime.now(timezone.utc).isoformat()
                         empty, _ = perf_stat(events, [*base, "0", *flags], name == "dram")
                         extra = calls(stdout) - 2
-                        median_ms = float(next(csv.DictReader(io.StringIO(stdout)))["median_ms"])
+                        pass_median_ms[name] = float(next(csv.DictReader(io.StringIO(stdout)))["median_ms"])
                         for event in events:
                             per_call[event] = (full[event] - empty[event]) / extra
+                        with passes_path.open("a", encoding="utf-8") as handle:
+                            handle.write(json.dumps(dict(algorithm=algorithm, n=n, d=d, threads=threads,
+                                br=settings[0], bc=settings[1], group=name, events=events,
+                                started_utc=started, timed_finished_utc=timed_finished,
+                                control_finished_utc=datetime.now(timezone.utc).isoformat(),
+                                full_counts=full, control_counts=empty, extra_kernel_calls=extra,
+                                median_ms=pass_median_ms[name], runner_stdout=stdout)) + "\n")
+                    # Pair cycles with timing from the same pass, regardless
+                    # of which optional event groups run afterwards.
+                    median_ms = pass_median_ms["cache"]
                     fp = (per_call.get("fp_arith_inst_retired.scalar_single", 0)
                           + 4 * per_call.get("fp_arith_inst_retired.128b_packed_single", 0)
                           + 8 * per_call.get("fp_arith_inst_retired.256b_packed_single", 0))
                     row = dict(
                         algorithm=algorithm, n=n, d=d, br=0 if algorithm == "baseline" else settings[0],
                         bc=0 if algorithm == "baseline" else settings[1], threads=threads, median_ms=median_ms,
+                        l2_median_ms=pass_median_ms.get("l2", ""),
+                        fp_median_ms=pass_median_ms.get("fp", ""),
+                        dram_median_ms=pass_median_ms.get("dram", ""),
+                        extra_median_ms=pass_median_ms.get("extra", ""),
+                        extra_counts_json=json.dumps({event: per_call[event] for event in extra_events
+                                                      if event in per_call}),
                         cycles=per_call["cycles"], instructions=per_call["instructions"],
                         ipc=per_call["instructions"] / per_call["cycles"],
                         ghz_per_thread=per_call["cycles"] / (median_ms * 1e6 * threads),
