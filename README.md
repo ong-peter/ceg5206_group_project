@@ -19,7 +19,7 @@ see the [report TODO run guide](docs/report_todos.md).
 | `src/` | Kernels (`attention.cpp` baseline, `blocked.cpp`, `streaming.cpp`), interface (`attention.h`), SIMD hints (`simd.h`) and the runner (`main.cpp`) |
 | `src/benchmarks/` | Frozen pre-optimization streaming kernel and its historical comparison driver; not part of the normal build |
 | `test/` | `check.py` (FP64 reference, correctness, tile tuning) and the streaming API test |
-| `scripts/` | `bench.py` and the benchmark, profiling, plotting, sanitizer and packaging scripts |
+| `scripts/` | `bench.py`, `torch_baseline.py` (PyTorch comparison) and the benchmark, profiling, plotting, sanitizer and packaging scripts |
 | `docs/` | Proposal, design notes, integration record and the [benchmarking guide](docs/benchmarking.md) |
 
 Run every command from the repository root; build outputs and results are written there.
@@ -231,6 +231,30 @@ Use `--tuning-output PATH` to change the JSON output location.
 it takes precedence over `--br`/`--bc`. It can also be combined with `--threads`
 once threaded kernels exist. Retune after changing kernels, compiler settings,
 or hardware. Tuning requires at least one compiled optimized kernel.
+
+## PyTorch comparison
+
+An optional reference point from a library: `scripts/torch_baseline.py` times
+PyTorch's single-call `torch.nn.functional.scaled_dot_product_attention` on CPU.
+PyTorch is not needed for the build, tests or CI, so it has its own
+requirements file (CPU-only build):
+
+```sh
+python -m pip install -r requirements-compare.txt
+python scripts/torch_baseline.py   # writes results/torch_sdpa.csv
+```
+
+For each of the 12 core shapes it gives PyTorch the same FP32 inputs as the
+benchmark ladder (`test/check.py`, seed `n+d`) and uses PyTorch's default
+settings, including its default thread count (recorded in the `threads`
+column). After 5 warm-up calls it times 15 calls and reports the median, Q1 and
+Q3 in ms, plus the error against the FP64 reference. Compare `median_ms` with
+`ladder.csv` rows of the same shape. Prepare the machine as for `make benchmark`
+(see the [benchmarking guide](docs/benchmarking.md)).
+
+PyTorch's implementation is not the same algorithm as ours (its matrix products
+come from MKL), so it is a library reference point rather than a matched
+comparison. Unlike our runner, it allocates its output on every call.
 
 ## Validation and results
 

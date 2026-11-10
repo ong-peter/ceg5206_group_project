@@ -1,0 +1,5 @@
+# Optional: PyTorch library comparison (scripts/torch_baseline.py).
+# Not used by CI or `make`; install on top of requirements.txt.
+-r requirements.txt
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.15.0+cpu
