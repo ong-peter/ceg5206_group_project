@@ -1,0 +1,12 @@
+NumPy import narrowed CPU affinity to [0, 8]; restoring 16 CPUs for the timed kernels
+4096x64 baseline  T=1  IPC 1.81  3.63 GHz  L1D miss 18.1%  LLC miss     0.60 MiB  DRAM    299.6 MiB  working set   68.00 MiB
+4096x64 blocked   T=1  IPC 3.01  3.60 GHz  L1D miss 1.0%  LLC miss     0.04 MiB  DRAM    136.8 MiB  working set   68.00 MiB
+4096x64 blocked   T=8  IPC 2.99  3.60 GHz  L1D miss 1.0%  LLC miss     0.21 MiB  DRAM    150.9 MiB  working set   68.00 MiB
+4096x64 streaming T=1  IPC 3.27  3.60 GHz  L1D miss 0.7%  LLC miss     0.00 MiB  DRAM      0.6 MiB  working set    4.02 MiB
+4096x64 streaming T=8  IPC 3.13  3.61 GHz  L1D miss 0.7%  LLC miss     0.00 MiB  DRAM     -0.0 MiB  working set    4.16 MiB
+4096x128 baseline  T=1  IPC 1.36  3.60 GHz  L1D miss 21.0%  LLC miss     1.73 MiB  DRAM    329.7 MiB  working set   72.00 MiB
+4096x128 blocked   T=1  IPC 2.94  3.60 GHz  L1D miss 1.3%  LLC miss     0.13 MiB  DRAM    143.5 MiB  working set   72.00 MiB
+4096x128 blocked   T=8  IPC 2.90  3.60 GHz  L1D miss 1.3%  LLC miss     1.12 MiB  DRAM    163.8 MiB  working set   72.00 MiB
+4096x128 streaming T=1  IPC 3.08  3.61 GHz  L1D miss 1.5%  LLC miss     0.03 MiB  DRAM      4.2 MiB  working set    8.04 MiB
+4096x128 streaming T=8  IPC 2.76  3.60 GHz  L1D miss 1.6%  LLC miss     0.01 MiB  DRAM      0.1 MiB  working set    8.28 MiB
+Saved /home/peter/ceg5206_proj/results/review_20261110T054852698533Z/R2/br32/counters.csv (counts per kernel call)

@@ -1,0 +1,6 @@
+{
+  "missing_fields": [],
+  "extra_events_requested": "l2_rqsts.demand_data_rd_miss,l2_lines_out.useless_hwpf,ocr.hwpf_l2_data_rd.any_response,cycle_activity.stalls_l2_miss",
+  "extra_group_present": true,
+  "all_standard_groups_present": true
+}

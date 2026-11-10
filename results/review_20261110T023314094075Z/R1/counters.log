@@ -1,0 +1,22 @@
+NumPy import narrowed CPU affinity to [0, 8]; restoring 16 CPUs for the timed kernels
+128x128 baseline  T=1  IPC 1.41  3.60 GHz  L1D miss 20.6%  LLC miss     0.00 MiB  DRAM      0.0 MiB  working set    0.31 MiB
+128x128 blocked   T=1  IPC 3.17  3.60 GHz  L1D miss 1.1%  LLC miss     0.00 MiB  DRAM      0.0 MiB  working set    0.31 MiB
+128x128 blocked   T=8  IPC 0.84  3.61 GHz  L1D miss 1.1%  LLC miss     0.00 MiB  DRAM      0.0 MiB  working set    0.31 MiB
+128x128 streaming T=1  IPC 2.74  3.60 GHz  L1D miss 1.4%  LLC miss    -0.00 MiB  DRAM      0.0 MiB  working set    0.31 MiB
+128x128 streaming T=8  IPC 2.69  0.90 GHz  L1D miss 1.4%  LLC miss    -0.00 MiB  DRAM      0.0 MiB  working set    0.36 MiB
+512x64 baseline  T=1  IPC 1.85  3.61 GHz  L1D miss 18.0%  LLC miss    -0.00 MiB  DRAM      0.2 MiB  working set    1.50 MiB
+512x64 blocked   T=1  IPC 3.03  3.60 GHz  L1D miss 0.8%  LLC miss    -0.00 MiB  DRAM      0.0 MiB  working set    1.50 MiB
+512x64 blocked   T=8  IPC 2.93  3.62 GHz  L1D miss 0.8%  LLC miss     0.00 MiB  DRAM      0.0 MiB  working set    1.50 MiB
+512x64 streaming T=1  IPC 3.23  3.60 GHz  L1D miss 1.0%  LLC miss    -0.00 MiB  DRAM      0.0 MiB  working set    0.53 MiB
+512x64 streaming T=8  IPC 3.08  3.61 GHz  L1D miss 1.0%  LLC miss     0.00 MiB  DRAM      0.0 MiB  working set    0.75 MiB
+4096x64 baseline  T=1  IPC 1.82  3.61 GHz  L1D miss 18.1%  LLC miss     0.60 MiB  DRAM    302.6 MiB  working set   68.00 MiB
+4096x64 blocked   T=1  IPC 3.01  3.60 GHz  L1D miss 0.8%  LLC miss     0.09 MiB  DRAM    146.4 MiB  working set   68.00 MiB
+4096x64 blocked   T=8  IPC 2.98  3.61 GHz  L1D miss 0.8%  LLC miss     1.28 MiB  DRAM    179.2 MiB  working set   68.00 MiB
+4096x64 streaming T=1  IPC 3.25  3.60 GHz  L1D miss 1.0%  LLC miss    -0.00 MiB  DRAM      0.8 MiB  working set    4.03 MiB
+4096x64 streaming T=8  IPC 3.11  3.60 GHz  L1D miss 1.0%  LLC miss     0.00 MiB  DRAM      1.0 MiB  working set    4.25 MiB
+4096x128 baseline  T=1  IPC 1.36  3.60 GHz  L1D miss 21.0%  LLC miss     1.58 MiB  DRAM    330.8 MiB  working set   72.00 MiB
+4096x128 blocked   T=1  IPC 2.96  3.59 GHz  L1D miss 1.1%  LLC miss     0.18 MiB  DRAM    151.6 MiB  working set   72.00 MiB
+4096x128 blocked   T=8  IPC 2.83  3.65 GHz  L1D miss 1.1%  LLC miss     5.23 MiB  DRAM    213.1 MiB  working set   72.00 MiB
+4096x128 streaming T=1  IPC 3.08  3.60 GHz  L1D miss 1.2%  LLC miss     0.01 MiB  DRAM      3.0 MiB  working set    8.06 MiB
+4096x128 streaming T=8  IPC 2.73  3.61 GHz  L1D miss 1.2%  LLC miss     0.07 MiB  DRAM      0.4 MiB  working set    8.44 MiB
+Saved /home/peter/ceg5206_proj/results/review_20261110T023314094075Z/R1/counters.csv (counts per kernel call)
