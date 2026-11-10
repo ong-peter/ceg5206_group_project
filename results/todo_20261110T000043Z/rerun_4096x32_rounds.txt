@@ -1,0 +1,5 @@
+baseline  T=1  pooled median   351.149 ms  per-round medians: 350.706 351.052 354.701 353.062 350.165 355.163  (max/min 1.014)
+blocked   T=1  pooled median   199.509 ms  per-round medians: 199.385 200.010 199.919 199.343 199.546 199.223  (max/min 1.004)
+streaming T=1  pooled median   146.217 ms  per-round medians: 146.681 146.320 146.388 145.873 145.864 146.186  (max/min 1.006)
+blocked   T=8  pooled median    25.513 ms  per-round medians: 25.452 25.500 25.480 39.160 25.511 26.360  (max/min 1.539)
+streaming T=8  pooled median    20.416 ms  per-round medians: 20.388 20.718 20.397 34.053 20.398 20.427  (max/min 1.670)

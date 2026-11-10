@@ -1,0 +1,71 @@
+
+== [08:00:43] Preflight
+2026-11-10T00:00:43Z
+git_commit=033b1482af00265b57fe7496000ea4eb784ac8c0
+git_dirty=no
+Linux omen 7.0.0-42-generic #42-Ubuntu SMP PREEMPT_DYNAMIC Thu Oct 15 08:06:44 UTC 2026 x86_64 GNU/Linux
+c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0
+governor=performance
+intel_no_turbo=1
+perf_event_paranoid=0
+load_average=0.00 0.00 0.02
+THREADS=8 TILES=results/benchmark_20261109T113037Z/tuned-tiles.json ONLY=1 2 3 4
+
+== [08:00:43] Build (OpenMP)
+c++  -DWITH_BLOCKED -DWITH_STREAMING -O3 -std=c++17 -Wall -Wextra -Wpedantic -fopenmp -march=native -fopenmp-simd -DATTN_BUILD_FLAGS='"c++  -DWITH_BLOCKED -DWITH_STREAMING -O3 -std=c++17 -Wall -Wextra -Wpedantic -fopenmp -march=native -fopenmp-simd -fopenmp"' src/attention.cpp src/main.cpp src/blocked.cpp src/streaming.cpp -fopenmp  -o attention
+flags=c++  -DWITH_BLOCKED -DWITH_STREAMING -O3 -std=c++17 -Wall -Wextra -Wpedantic -fopenmp -march=native -fopenmp-simd -fopenmp
+openmp=1
+vectorized=1
+
+== [08:00:45] TODO 1: streaming 8T at 4096x32, 6 interleaved rounds
+NumPy import narrowed CPU affinity to [0, 8]; restoring 16 CPUs for the timed kernels
+
+4096x32
+  1         baseline            T=1      351.149 ms  IQR 350.686-354.379    1.00x vs baseline    6.12 GFLOP/s  scratch    64.00 MiB  peak RSS    70.9 MiB
+  1+2       blocked             T=1      199.509 ms  IQR 199.323-199.862    1.76x vs baseline   10.76 GFLOP/s  scratch    64.00 MiB  peak RSS    70.8 MiB
+  1+2+3     streaming           T=1      146.217 ms  IQR 145.888-146.412    2.40x vs baseline   14.69 GFLOP/s  scratch     0.02 MiB  peak RSS     6.8 MiB
+  1+2+4     blocked             T=8       25.513 ms  IQR 25.477-26.360   13.76x vs baseline   84.17 GFLOP/s  scratch    64.00 MiB  peak RSS    70.8 MiB  7.82x vs 1T
+  1+2+3+4   streaming           T=8       20.416 ms  IQR 20.395-20.717   17.20x vs baseline  105.19 GFLOP/s  scratch     0.16 MiB  peak RSS     7.0 MiB  7.16x vs 1T
+
+Saved /home/peter/ceg5206_proj/results/todo_20261110T000043Z/rerun_4096x32.csv and /home/peter/ceg5206_proj/results/todo_20261110T000043Z/rerun_4096x32.machine.json
+baseline  T=1  pooled median   351.149 ms  per-round medians: 350.706 351.052 354.701 353.062 350.165 355.163  (max/min 1.014)
+blocked   T=1  pooled median   199.509 ms  per-round medians: 199.385 200.010 199.919 199.343 199.546 199.223  (max/min 1.004)
+streaming T=1  pooled median   146.217 ms  per-round medians: 146.681 146.320 146.388 145.873 145.864 146.186  (max/min 1.006)
+blocked   T=8  pooled median    25.513 ms  per-round medians: 25.452 25.500 25.480 39.160 25.511 26.360  (max/min 1.539)
+streaming T=8  pooled median    20.416 ms  per-round medians: 20.388 20.718 20.397 34.053 20.398 20.427  (max/min 1.670)
+
+== [08:02:33] TODO 2: perf counters at 128x128, 1 thread
+128x128 baseline  T=1  IPC 1.38  3.61 GHz  L1D miss 20.6%  LLC miss     0.00 MiB  DRAM      0.0 MiB  working set    0.31 MiB
+128x128 blocked   T=1  IPC 2.94  3.60 GHz  L1D miss 1.1%  LLC miss     0.00 MiB  DRAM      0.0 MiB  working set    0.31 MiB
+128x128 streaming T=1  IPC 3.06  3.61 GHz  L1D miss 1.4%  LLC miss    -0.00 MiB  DRAM      0.0 MiB  working set    0.31 MiB
+Saved /home/peter/ceg5206_proj/results/todo_20261110T000043Z/perf_128x128.csv (counts per kernel call)
+
+== [08:02:36] TODO 3: perf counters at 4096x128 and 4096x64, 1 and 8 threads (pinned)
+NumPy import narrowed CPU affinity to [0, 8]; restoring 16 CPUs for the timed kernels
+4096x64 baseline  T=1  IPC 1.82  3.63 GHz  L1D miss 18.1%  LLC miss     0.54 MiB  DRAM    296.4 MiB  working set   68.00 MiB
+4096x64 blocked   T=1  IPC 3.03  3.57 GHz  L1D miss 0.8%  LLC miss     0.13 MiB  DRAM    143.1 MiB  working set   68.00 MiB
+4096x64 blocked   T=8  IPC 3.01  3.59 GHz  L1D miss 0.8%  LLC miss     1.63 MiB  DRAM    178.5 MiB  working set   68.00 MiB
+4096x64 streaming T=1  IPC 3.26  3.57 GHz  L1D miss 1.0%  LLC miss     0.01 MiB  DRAM      1.1 MiB  working set    4.03 MiB
+4096x64 streaming T=8  IPC 3.10  3.61 GHz  L1D miss 1.0%  LLC miss    -0.00 MiB  DRAM      0.3 MiB  working set    4.25 MiB
+4096x128 baseline  T=1  IPC 1.36  3.60 GHz  L1D miss 21.0%  LLC miss     1.69 MiB  DRAM    328.5 MiB  working set   72.00 MiB
+4096x128 blocked   T=1  IPC 2.95  3.59 GHz  L1D miss 1.1%  LLC miss     0.20 MiB  DRAM    151.1 MiB  working set   72.00 MiB
+4096x128 blocked   T=8  IPC 2.91  3.57 GHz  L1D miss 1.1%  LLC miss     7.76 MiB  DRAM    191.8 MiB  working set   72.00 MiB
+4096x128 streaming T=1  IPC 3.07  3.60 GHz  L1D miss 1.2%  LLC miss     0.02 MiB  DRAM      4.5 MiB  working set    8.06 MiB
+4096x128 streaming T=8  IPC 2.75  3.61 GHz  L1D miss 1.2%  LLC miss     0.02 MiB  DRAM      0.5 MiB  working set    8.44 MiB
+Saved /home/peter/ceg5206_proj/results/todo_20261110T000043Z/perf_4096_d64_d128.csv (counts per kernel call)
+
+== [08:09:17] TODO 4: sustainable DRAM bandwidth (triad, 768 MiB working set)
+threads,array_mib,best_s,triad_gb_s,check
+1,256,0.032033,25.14,112.0
+8,256,0.028729,28.03,112.0
+
+== [08:09:18] Done: /home/peter/ceg5206_proj/results/todo_20261110T000043Z
+Where each result goes in report/main.tex:
+  TODO 1  rerun_4096x32_rounds.txt: if every round agrees, the earlier slow round
+          was a one-off; otherwise report the per-round medians.
+  TODO 2  perf_128x128.csv: IPC, instructions per call, vector share,
+          blocked vs streaming (Part C, the (128,128) exception).
+  TODO 3  perf_4096_d64_d128.csv: compare ghz_per_thread and l2_miss_rate /
+          llc_* for streaming at 1 vs 8 threads, d=64 vs d=128 (Part D).
+  TODO 4  stream_triad.csv: triad GB/s at 1 and 8 threads; machine balance =
+          922 GFLOP/s / triad GB/s (Section 4.7).
