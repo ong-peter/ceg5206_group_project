@@ -1,0 +1,20 @@
+{
+  "command": [
+    "c++",
+    "-O3",
+    "-std=c++17",
+    "-march=native",
+    "-fopenmp-simd",
+    "-fopenmp",
+    "-DBLOCKED_PACK_K",
+    "-DPROFILE_STREAMING",
+    "-I",
+    "/home/peter/ceg5206_proj/src",
+    "/home/peter/ceg5206_proj/results/review_20261110T100054390740Z/R3/stages/driver.cpp",
+    "/home/peter/ceg5206_proj/src/attention.cpp",
+    "/home/peter/ceg5206_proj/results/review_20261110T100054390740Z/R3/stages/streaming.cpp",
+    "-fopenmp",
+    "-o",
+    "/home/peter/ceg5206_proj/results/review_20261110T100054390740Z/R3/stages/streaming"
+  ]
+}
