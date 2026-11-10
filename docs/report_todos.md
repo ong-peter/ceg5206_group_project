@@ -8,6 +8,22 @@ The report's R1--R6 identifiers are the experiment names used below. S1--S6
 are submission checks requiring the team's actual information. Scripts never
 remove TODO markers or insert experimental conclusions into the report.
 
+## Current remaining work (10 November 2026)
+
+The supported R1--R6 evidence has been incorporated into the report. Only R3
+needs another performance session before ranking its two noisy 8-thread cases,
+`(2048,32)` and `(2048,64)`. Rerun **R3 only**, using the command below; the
+existing runner repeats all six R3 shapes and its serial stage diagnostics.
+It has no shape-selection option. The other completed experiments do not need
+to be repeated for this update.
+
+Further investigations into R2's scaling loss, R5's historical slow rounds and
+R6's original ranking reversal are closed at the team's request. The report
+records possible explanations as unproven hypotheses and retains the limits
+of the existing evidence. S1--S6 still require the team's submission details
+and checks. The sections below retain the commands for reproducing each
+completed experiment; they are not all outstanding tasks.
+
 ## Setup
 
 From the repository root, activate the Python environment used for the final
@@ -57,7 +73,7 @@ The runner stops on a failed compile, reference check, changed timed output or
 thread-invariance failure and preserves partial evidence and an error manifest.
 To retry a failed task, use `--only Rn` with a new output directory.
 
-## R1: required corrected counter measurements
+## R1: corrected counter measurements
 
 First start an independent clock monitor in terminal A, from the repository
 root. Use the same path in terminal B. `results/` already exists in this project:
@@ -106,6 +122,37 @@ ratio. Separate passes and control subtraction introduce noise; negative or
 very small differences are not evidence of negative traffic or exact zero.
 This rerun alone does not establish an L3-latency cause.
 
+### Summarizing existing clock logs without transferring them
+
+After copying the updated summary script to the Ubuntu checkout, run:
+
+```bash
+"$PYTHON" scripts/summarize_review_clocks.py \
+  --run results/review_20261110T023314094075Z \
+  --log results/review_clocks.txt --json results/clock_summary_R1.json
+
+"$PYTHON" scripts/summarize_review_clocks.py \
+  --run results/review_20261110T054852698533Z \
+  --log results/review_clocks_R2b.txt --json results/clock_summary_R2.json
+
+"$PYTHON" scripts/summarize_review_clocks.py \
+  --run results/review_20261110T052926748810Z \
+  --log results/review_clocks_R5.txt --json results/clock_summary_R5.json
+```
+
+Paste the printed summary and phase table, or transfer the small JSON files.
+The original logs remain untouched. The script excludes idle rows, separates
+aggregate/per-CPU rows when CPU identifiers are present, and reports busy-clock
+distributions and timestamped coverage of each counter/telemetry phase.
+Only sampling intervals fully contained within a phase are used. A short phase
+can have no complete samples; this is reported rather than filled in. The
+default interval is one second: use `--interval` if the logs used another value.
+Without `Time_Of_Day_Seconds`, clocks can be summarized for the log as a whole,
+but their association with specific experiment phases remains unverified.
+If the CPU column was omitted, the output explicitly discloses that aggregate
+and per-CPU rows cannot be separated. See the
+[turbostat field definitions](https://manpages.debian.org/trixie/linux-cpupower/turbostat.8.en.html).
+
 ## R2: query-tile/cache hypothesis
 
 ```bash
@@ -147,9 +194,28 @@ does not prove a cache-latency mechanism.
 
 ## R3: matched comparison and stage diagnostics
 
+On the original Ubuntu benchmark machine, use the same environment and fixed
+clock settings as the earlier runs and keep the machine idle. From the project
+root, start a fresh independent monitor in terminal A:
+
 ```bash
-bash scripts/run_review_todos.sh --only R3 --threads 1,8
+sudo turbostat --quiet --show Time_Of_Day_Seconds,Busy%,Bzy_MHz --interval 1 \
+  --out results/review_clocks_R3_rerun.txt
 ```
+
+Then run R3 with six rotated rounds in terminal B:
+
+```bash
+bash scripts/run_review_todos.sh --only R3 --threads 1,8 --rounds 6 \
+  --clock-log results/review_clocks_R3_rerun.txt
+```
+
+Use a new clock-log filename if this one already exists. After R3 finishes,
+stop the monitor with Ctrl+C and retain the log alongside the new result
+folder. `--clock-log` records the association; it does not start the monitor.
+The runner creates a new timestamped results directory and preserves the
+earlier results. This reruns R3 alone, including its validation and diagnostics;
+it does not rerun the entire benchmark ladder or the other R tasks.
 
 One build enables `BLOCKED_PACK_K`, leaving reordered PV enabled. It compares
 packed blocked and streaming in rotated interleaved rounds with identical
@@ -234,8 +300,9 @@ unique explanation for the original rank reversal.
 ## Running several experiments
 
 ```bash
-# Required rerun only (also the default):
-bash scripts/run_review_todos.sh --only R1
+# Remaining report rerun (start its clock monitor separately):
+bash scripts/run_review_todos.sh --only R3 --threads 1,8 --rounds 6 \
+  --clock-log results/review_clocks_R3_rerun.txt
 
 # All six, including the optional R2 counter sweep:
 bash scripts/run_review_todos.sh --only all --threads 1,8 --cache-counters \
