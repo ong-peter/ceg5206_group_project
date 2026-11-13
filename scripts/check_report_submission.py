@@ -44,6 +44,8 @@ def check(root=ROOT):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--final", action="store_true", help="Fail if TODOs or missing/untracked assets remain")
+    parser.add_argument("--allow-video-pending", action="store_true",
+                        help="With --final, permit only S3 while the video is being prepared")
     args = parser.parse_args()
     todos, problems = check()
     for line, label in todos:
@@ -54,7 +56,11 @@ def main():
     for label, action in MANUAL.items():
         print(f"{label}: {action}")
     print(f"\n{len(todos)} visible TODO markers; {len(problems)} asset issues.")
-    if args.final and (todos or problems):
+    blocking_todos = [(line, label) for line, label in todos
+                      if not (args.allow_video_pending and label == "S3")]
+    if args.allow_video_pending:
+        print("Video exception: S3 may remain; video submission/access is not certified.")
+    if args.final and (blocking_todos or problems):
         raise SystemExit(1)
 
 

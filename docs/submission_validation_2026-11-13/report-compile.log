@@ -1,0 +1,8 @@
+Root: /Users/chenxinzhe/Documents/ChatGPT/CEG 5206/report-final/main.tex
+Compiler: tectonic
+Command: /Applications/ChatGPT.app/Contents/Resources/tectonic/tectonic -X compile --outdir /Users/chenxinzhe/Documents/ChatGPT/CEG 5206/report-final --outfmt pdf --print --untrusted main.tex
+Exit code: 0
+PDF: /Users/chenxinzhe/Documents/ChatGPT/CEG 5206/report-final/main.pdf
+
+Attempts:
+- tectonic: passed (exit 0)

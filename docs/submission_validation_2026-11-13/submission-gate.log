@@ -1,0 +1,12 @@
+report/main.tex:647: TODO S3
+
+Human checks (the script cannot complete these):
+S1: Confirm original/adapted/AI-assisted figure provenance and attribution.
+S2: Have every member confirm completed contributions and reused code.
+S3: Add the clickable 10--15 minute video link; test instructor/TA access.
+S4: Set a final release tag/commit identifying the assessed package.
+S5: Complete the actual AI tools, uses and human-verification declaration.
+S6: Check public repository/video access and reproduce from the final checkout.
+
+1 visible TODO markers; 0 asset issues.
+Video exception: S3 may remain; video submission/access is not certified.

@@ -1,0 +1,250 @@
+c++  -DWITH_BLOCKED -DWITH_STREAMING -O3 -std=c++17 -Wall -Wextra -Wpedantic -Xpreprocessor -fopenmp -I../tmp/openmp/include -mcpu=native -fopenmp-simd -DATTN_BUILD_FLAGS='"c++  -DWITH_BLOCKED -DWITH_STREAMING -O3 -std=c++17 -Wall -Wextra -Wpedantic -Xpreprocessor -fopenmp -I../tmp/openmp/include -mcpu=native -fopenmp-simd -L../tmp/openmp/lib -Wl,-rpath,../tmp/openmp/lib -lomp"' src/attention.cpp src/main.cpp src/blocked.cpp src/streaming.cpp -L../tmp/openmp/lib -Wl,-rpath,../tmp/openmp/lib -lomp  -o attention
+"../tmp/repro-venv/bin/python" test/check.py --algorithm all --tiles
+baseline: 17 input/option checks passed
+blocked: 16 input/option checks passed
+streaming: 17 input/option checks passed
+baseline     single              1x33  abs=0.000e+00 rel=0.000e+00 PASS
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=32 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=1 Bc=1 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=16 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=32 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=64 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=16 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=64 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=16 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=32 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=64 T=1
+blocked      single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=2 Bc=2 T=1
+streaming    single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=32 T=1
+streaming    single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=1 Bc=1 T=1
+streaming    single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=16 T=1
+streaming    single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=32 T=1
+streaming    single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=64 T=1
+streaming    single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=16 T=1
+streaming    single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=64 T=1
+streaming    single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=16 T=1
+streaming    single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=32 T=1
+streaming    single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=64 T=1
+streaming    single              1x33  abs=0.000e+00 rel=0.000e+00 PASS Br=2 Bc=2 T=1
+online-fp64  single              1x33  abs=0.000e+00 rel=0.000e+00 PASS
+online-fp32  single              1x33  abs=0.000e+00 rel=0.000e+00 PASS
+baseline     zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=32 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=1 Bc=1 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=16 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=32 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=64 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=16 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=64 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=16 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=32 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=64 T=1
+blocked      zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=18 Bc=18 T=1
+streaming    zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=32 T=1
+streaming    zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=1 Bc=1 T=1
+streaming    zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=16 T=1
+streaming    zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=32 T=1
+streaming    zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=16 Bc=64 T=1
+streaming    zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=16 T=1
+streaming    zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=32 Bc=64 T=1
+streaming    zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=16 T=1
+streaming    zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=32 T=1
+streaming    zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=64 Bc=64 T=1
+streaming    zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS Br=18 Bc=18 T=1
+online-fp64  zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS
+online-fp32  zeros              17x7   abs=0.000e+00 rel=0.000e+00 PASS
+baseline     zero-scores        17x7   abs=2.027e-08 rel=5.056e-08 PASS
+blocked      zero-scores        17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=32 Bc=32 T=1
+blocked      zero-scores        17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=1 Bc=1 T=1
+blocked      zero-scores        17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=16 Bc=16 T=1
+blocked      zero-scores        17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=16 Bc=32 T=1
+blocked      zero-scores        17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=16 Bc=64 T=1
+blocked      zero-scores        17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=32 Bc=16 T=1
+blocked      zero-scores        17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=32 Bc=64 T=1
+blocked      zero-scores        17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=64 Bc=16 T=1
+blocked      zero-scores        17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=64 Bc=32 T=1
+blocked      zero-scores        17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=64 Bc=64 T=1
+blocked      zero-scores        17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=18 Bc=18 T=1
+streaming    zero-scores        17x7   abs=2.405e-08 rel=5.385e-08 PASS Br=32 Bc=32 T=1
+streaming    zero-scores        17x7   abs=2.405e-08 rel=5.385e-08 PASS Br=1 Bc=1 T=1
+streaming    zero-scores        17x7   abs=2.405e-08 rel=5.385e-08 PASS Br=16 Bc=16 T=1
+streaming    zero-scores        17x7   abs=2.405e-08 rel=5.385e-08 PASS Br=16 Bc=32 T=1
+streaming    zero-scores        17x7   abs=2.405e-08 rel=5.385e-08 PASS Br=16 Bc=64 T=1
+streaming    zero-scores        17x7   abs=2.405e-08 rel=5.385e-08 PASS Br=32 Bc=16 T=1
+streaming    zero-scores        17x7   abs=2.405e-08 rel=5.385e-08 PASS Br=32 Bc=64 T=1
+streaming    zero-scores        17x7   abs=2.405e-08 rel=5.385e-08 PASS Br=64 Bc=16 T=1
+streaming    zero-scores        17x7   abs=2.405e-08 rel=5.385e-08 PASS Br=64 Bc=32 T=1
+streaming    zero-scores        17x7   abs=2.405e-08 rel=5.385e-08 PASS Br=64 Bc=64 T=1
+streaming    zero-scores        17x7   abs=2.405e-08 rel=5.385e-08 PASS Br=18 Bc=18 T=1
+online-fp64  zero-scores        17x7   abs=5.551e-17 rel=1.071e-16 PASS
+online-fp32  zero-scores        17x7   abs=2.405e-08 rel=5.385e-08 PASS
+baseline     identical-rows     17x7   abs=2.027e-08 rel=5.056e-08 PASS
+blocked      identical-rows     17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=32 Bc=32 T=1
+blocked      identical-rows     17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=1 Bc=1 T=1
+blocked      identical-rows     17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=16 Bc=16 T=1
+blocked      identical-rows     17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=16 Bc=32 T=1
+blocked      identical-rows     17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=16 Bc=64 T=1
+blocked      identical-rows     17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=32 Bc=16 T=1
+blocked      identical-rows     17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=32 Bc=64 T=1
+blocked      identical-rows     17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=64 Bc=16 T=1
+blocked      identical-rows     17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=64 Bc=32 T=1
+blocked      identical-rows     17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=64 Bc=64 T=1
+blocked      identical-rows     17x7   abs=2.027e-08 rel=5.056e-08 PASS Br=18 Bc=18 T=1
+streaming    identical-rows     17x7   abs=2.405e-08 rel=7.423e-08 PASS Br=32 Bc=32 T=1
+streaming    identical-rows     17x7   abs=2.405e-08 rel=5.385e-08 PASS Br=1 Bc=1 T=1
+streaming    identical-rows     17x7   abs=5.385e-08 rel=1.169e-07 PASS Br=16 Bc=16 T=1
+streaming    identical-rows     17x7   abs=2.405e-08 rel=7.423e-08 PASS Br=16 Bc=32 T=1
+streaming    identical-rows     17x7   abs=2.405e-08 rel=7.423e-08 PASS Br=16 Bc=64 T=1
+streaming    identical-rows     17x7   abs=5.385e-08 rel=1.169e-07 PASS Br=32 Bc=16 T=1
+streaming    identical-rows     17x7   abs=2.405e-08 rel=7.423e-08 PASS Br=32 Bc=64 T=1
+streaming    identical-rows     17x7   abs=5.385e-08 rel=1.169e-07 PASS Br=64 Bc=16 T=1
+streaming    identical-rows     17x7   abs=2.405e-08 rel=7.423e-08 PASS Br=64 Bc=32 T=1
+streaming    identical-rows     17x7   abs=2.405e-08 rel=7.423e-08 PASS Br=64 Bc=64 T=1
+streaming    identical-rows     17x7   abs=2.405e-08 rel=7.423e-08 PASS Br=18 Bc=18 T=1
+online-fp64  identical-rows     17x7   abs=5.551e-17 rel=1.071e-16 PASS
+online-fp32  identical-rows     17x7   abs=2.405e-08 rel=5.385e-08 PASS
+baseline     tail-127-33       127x33  abs=9.683e-08 rel=2.786e-07 PASS
+blocked      tail-127-33       127x33  abs=9.683e-08 rel=2.853e-07 PASS Br=32 Bc=32 T=1
+blocked      tail-127-33       127x33  abs=9.683e-08 rel=2.853e-07 PASS Br=1 Bc=1 T=1
+blocked      tail-127-33       127x33  abs=9.683e-08 rel=2.853e-07 PASS Br=16 Bc=16 T=1
+blocked      tail-127-33       127x33  abs=9.683e-08 rel=2.853e-07 PASS Br=16 Bc=32 T=1
+blocked      tail-127-33       127x33  abs=9.683e-08 rel=2.853e-07 PASS Br=16 Bc=64 T=1
+blocked      tail-127-33       127x33  abs=9.683e-08 rel=2.853e-07 PASS Br=32 Bc=16 T=1
+blocked      tail-127-33       127x33  abs=9.683e-08 rel=2.853e-07 PASS Br=32 Bc=64 T=1
+blocked      tail-127-33       127x33  abs=9.683e-08 rel=2.853e-07 PASS Br=64 Bc=16 T=1
+blocked      tail-127-33       127x33  abs=9.683e-08 rel=2.853e-07 PASS Br=64 Bc=32 T=1
+blocked      tail-127-33       127x33  abs=9.683e-08 rel=2.853e-07 PASS Br=64 Bc=64 T=1
+blocked      tail-127-33       127x33  abs=9.683e-08 rel=2.853e-07 PASS Br=128 Bc=128 T=1
+streaming    tail-127-33       127x33  abs=8.401e-08 rel=2.342e-07 PASS Br=32 Bc=32 T=1
+streaming    tail-127-33       127x33  abs=8.335e-08 rel=2.751e-07 PASS Br=1 Bc=1 T=1
+streaming    tail-127-33       127x33  abs=7.028e-08 rel=2.343e-07 PASS Br=16 Bc=16 T=1
+streaming    tail-127-33       127x33  abs=8.401e-08 rel=2.342e-07 PASS Br=16 Bc=32 T=1
+streaming    tail-127-33       127x33  abs=8.401e-08 rel=2.441e-07 PASS Br=16 Bc=64 T=1
+streaming    tail-127-33       127x33  abs=7.028e-08 rel=2.343e-07 PASS Br=32 Bc=16 T=1
+streaming    tail-127-33       127x33  abs=8.401e-08 rel=2.441e-07 PASS Br=32 Bc=64 T=1
+streaming    tail-127-33       127x33  abs=7.028e-08 rel=2.343e-07 PASS Br=64 Bc=16 T=1
+streaming    tail-127-33       127x33  abs=8.401e-08 rel=2.342e-07 PASS Br=64 Bc=32 T=1
+streaming    tail-127-33       127x33  abs=8.401e-08 rel=2.441e-07 PASS Br=64 Bc=64 T=1
+streaming    tail-127-33       127x33  abs=9.891e-08 rel=2.846e-07 PASS Br=128 Bc=128 T=1
+online-fp64  tail-127-33       127x33  abs=2.220e-16 rel=6.627e-16 PASS
+online-fp32  tail-127-33       127x33  abs=8.401e-08 rel=2.705e-07 PASS
+baseline     tail-513-65       513x65  abs=1.112e-07 rel=5.227e-07 PASS
+blocked      tail-513-65       513x65  abs=1.112e-07 rel=5.197e-07 PASS Br=32 Bc=32 T=1
+blocked      tail-513-65       513x65  abs=1.112e-07 rel=5.197e-07 PASS Br=1 Bc=1 T=1
+blocked      tail-513-65       513x65  abs=1.112e-07 rel=5.197e-07 PASS Br=16 Bc=16 T=1
+blocked      tail-513-65       513x65  abs=1.112e-07 rel=5.197e-07 PASS Br=16 Bc=32 T=1
+blocked      tail-513-65       513x65  abs=1.112e-07 rel=5.197e-07 PASS Br=16 Bc=64 T=1
+blocked      tail-513-65       513x65  abs=1.112e-07 rel=5.197e-07 PASS Br=32 Bc=16 T=1
+blocked      tail-513-65       513x65  abs=1.112e-07 rel=5.197e-07 PASS Br=32 Bc=64 T=1
+blocked      tail-513-65       513x65  abs=1.112e-07 rel=5.197e-07 PASS Br=64 Bc=16 T=1
+blocked      tail-513-65       513x65  abs=1.112e-07 rel=5.197e-07 PASS Br=64 Bc=32 T=1
+blocked      tail-513-65       513x65  abs=1.112e-07 rel=5.197e-07 PASS Br=64 Bc=64 T=1
+blocked      tail-513-65       513x65  abs=1.112e-07 rel=5.197e-07 PASS Br=514 Bc=514 T=1
+streaming    tail-513-65       513x65  abs=8.968e-08 rel=4.116e-07 PASS Br=32 Bc=32 T=1
+streaming    tail-513-65       513x65  abs=9.656e-08 rel=5.321e-07 PASS Br=1 Bc=1 T=1
+streaming    tail-513-65       513x65  abs=8.968e-08 rel=4.139e-07 PASS Br=16 Bc=16 T=1
+streaming    tail-513-65       513x65  abs=8.968e-08 rel=4.116e-07 PASS Br=16 Bc=32 T=1
+streaming    tail-513-65       513x65  abs=7.478e-08 rel=4.096e-07 PASS Br=16 Bc=64 T=1
+streaming    tail-513-65       513x65  abs=8.968e-08 rel=4.139e-07 PASS Br=32 Bc=16 T=1
+streaming    tail-513-65       513x65  abs=7.478e-08 rel=4.096e-07 PASS Br=32 Bc=64 T=1
+streaming    tail-513-65       513x65  abs=8.968e-08 rel=4.139e-07 PASS Br=64 Bc=16 T=1
+streaming    tail-513-65       513x65  abs=8.968e-08 rel=4.116e-07 PASS Br=64 Bc=32 T=1
+streaming    tail-513-65       513x65  abs=7.478e-08 rel=4.096e-07 PASS Br=64 Bc=64 T=1
+streaming    tail-513-65       513x65  abs=1.043e-07 rel=5.216e-07 PASS Br=514 Bc=514 T=1
+online-fp64  tail-513-65       513x65  abs=2.220e-16 rel=1.225e-15 PASS
+online-fp32  tail-513-65       513x65  abs=8.913e-08 rel=5.339e-07 PASS
+baseline     concentrated      127x33  abs=8.278e-06 rel=1.329e-06 PASS
+blocked      concentrated      127x33  abs=5.438e-06 rel=7.937e-07 PASS Br=32 Bc=32 T=1
+blocked      concentrated      127x33  abs=5.438e-06 rel=7.937e-07 PASS Br=1 Bc=1 T=1
+blocked      concentrated      127x33  abs=5.438e-06 rel=7.937e-07 PASS Br=16 Bc=16 T=1
+blocked      concentrated      127x33  abs=5.438e-06 rel=7.937e-07 PASS Br=16 Bc=32 T=1
+blocked      concentrated      127x33  abs=5.438e-06 rel=7.937e-07 PASS Br=16 Bc=64 T=1
+blocked      concentrated      127x33  abs=5.438e-06 rel=7.937e-07 PASS Br=32 Bc=16 T=1
+blocked      concentrated      127x33  abs=5.438e-06 rel=7.937e-07 PASS Br=32 Bc=64 T=1
+blocked      concentrated      127x33  abs=5.438e-06 rel=7.937e-07 PASS Br=64 Bc=16 T=1
+blocked      concentrated      127x33  abs=5.438e-06 rel=7.937e-07 PASS Br=64 Bc=32 T=1
+blocked      concentrated      127x33  abs=5.438e-06 rel=7.937e-07 PASS Br=64 Bc=64 T=1
+blocked      concentrated      127x33  abs=5.438e-06 rel=7.937e-07 PASS Br=128 Bc=128 T=1
+streaming    concentrated      127x33  abs=1.118e-05 rel=1.457e-06 PASS Br=32 Bc=32 T=1
+streaming    concentrated      127x33  abs=8.307e-06 rel=1.329e-06 PASS Br=1 Bc=1 T=1
+streaming    concentrated      127x33  abs=1.118e-05 rel=1.458e-06 PASS Br=16 Bc=16 T=1
+streaming    concentrated      127x33  abs=1.118e-05 rel=1.457e-06 PASS Br=16 Bc=32 T=1
+streaming    concentrated      127x33  abs=1.118e-05 rel=1.458e-06 PASS Br=16 Bc=64 T=1
+streaming    concentrated      127x33  abs=1.118e-05 rel=1.458e-06 PASS Br=32 Bc=16 T=1
+streaming    concentrated      127x33  abs=1.118e-05 rel=1.458e-06 PASS Br=32 Bc=64 T=1
+streaming    concentrated      127x33  abs=1.118e-05 rel=1.458e-06 PASS Br=64 Bc=16 T=1
+streaming    concentrated      127x33  abs=1.118e-05 rel=1.457e-06 PASS Br=64 Bc=32 T=1
+streaming    concentrated      127x33  abs=1.118e-05 rel=1.458e-06 PASS Br=64 Bc=64 T=1
+streaming    concentrated      127x33  abs=1.118e-05 rel=1.458e-06 PASS Br=128 Bc=128 T=1
+online-fp64  concentrated      127x33  abs=7.716e-15 rel=1.537e-15 PASS
+online-fp32  concentrated      127x33  abs=1.119e-05 rel=1.461e-06 PASS
+baseline     rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=32 Bc=32 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=1 Bc=1 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=16 Bc=16 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=16 Bc=32 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=16 Bc=64 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=32 Bc=16 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=32 Bc=64 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=64 Bc=16 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=64 Bc=32 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=64 Bc=64 T=1
+blocked      rising-maximum     65x5   abs=4.533e-09 rel=7.290e-09 PASS Br=66 Bc=66 T=1
+streaming    rising-maximum     65x5   abs=1.486e-08 rel=2.387e-08 PASS Br=32 Bc=32 T=1
+streaming    rising-maximum     65x5   abs=1.486e-08 rel=2.387e-08 PASS Br=1 Bc=1 T=1
+streaming    rising-maximum     65x5   abs=1.486e-08 rel=2.387e-08 PASS Br=16 Bc=16 T=1
+streaming    rising-maximum     65x5   abs=1.486e-08 rel=2.387e-08 PASS Br=16 Bc=32 T=1
+streaming    rising-maximum     65x5   abs=1.486e-08 rel=2.387e-08 PASS Br=16 Bc=64 T=1
+streaming    rising-maximum     65x5   abs=1.486e-08 rel=2.387e-08 PASS Br=32 Bc=16 T=1
+streaming    rising-maximum     65x5   abs=1.486e-08 rel=2.387e-08 PASS Br=32 Bc=64 T=1
+streaming    rising-maximum     65x5   abs=1.486e-08 rel=2.387e-08 PASS Br=64 Bc=16 T=1
+streaming    rising-maximum     65x5   abs=1.486e-08 rel=2.387e-08 PASS Br=64 Bc=32 T=1
+streaming    rising-maximum     65x5   abs=1.486e-08 rel=2.387e-08 PASS Br=64 Bc=64 T=1
+streaming    rising-maximum     65x5   abs=1.486e-08 rel=2.387e-08 PASS Br=66 Bc=66 T=1
+online-fp64  rising-maximum     65x5   abs=1.110e-16 rel=1.291e-16 PASS
+online-fp32  rising-maximum     65x5   abs=1.486e-08 rel=2.387e-08 PASS
+baseline     early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=32 Bc=32 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=1 Bc=1 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=16 Bc=16 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=16 Bc=32 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=16 Bc=64 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=32 Bc=16 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=32 Bc=64 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=64 Bc=16 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=64 Bc=32 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=64 Bc=64 T=1
+blocked      early-maximum      65x5   abs=7.742e-08 rel=6.335e-08 PASS Br=66 Bc=66 T=1
+streaming    early-maximum      65x5   abs=2.257e-08 rel=2.745e-08 PASS Br=32 Bc=32 T=1
+streaming    early-maximum      65x5   abs=2.257e-08 rel=2.745e-08 PASS Br=1 Bc=1 T=1
+streaming    early-maximum      65x5   abs=2.257e-08 rel=2.745e-08 PASS Br=16 Bc=16 T=1
+streaming    early-maximum      65x5   abs=2.257e-08 rel=2.745e-08 PASS Br=16 Bc=32 T=1
+streaming    early-maximum      65x5   abs=2.257e-08 rel=2.745e-08 PASS Br=16 Bc=64 T=1
+streaming    early-maximum      65x5   abs=2.257e-08 rel=2.745e-08 PASS Br=32 Bc=16 T=1
+streaming    early-maximum      65x5   abs=2.257e-08 rel=2.745e-08 PASS Br=32 Bc=64 T=1
+streaming    early-maximum      65x5   abs=2.257e-08 rel=2.745e-08 PASS Br=64 Bc=16 T=1
+streaming    early-maximum      65x5   abs=2.257e-08 rel=2.745e-08 PASS Br=64 Bc=32 T=1
+streaming    early-maximum      65x5   abs=2.257e-08 rel=2.745e-08 PASS Br=64 Bc=64 T=1
+streaming    early-maximum      65x5   abs=2.257e-08 rel=2.745e-08 PASS Br=66 Bc=66 T=1
+online-fp64  early-maximum      65x5   abs=2.220e-16 rel=2.495e-16 PASS
+online-fp32  early-maximum      65x5   abs=2.257e-08 rel=2.745e-08 PASS
+baseline     core              128x64  abs=1.026e-07 rel=2.646e-07 PASS
+blocked      core              128x64  abs=9.627e-08 rel=2.645e-07 PASS Br=32 Bc=32 T=1
+streaming    core              128x64  abs=1.048e-07 rel=2.236e-07 PASS Br=32 Bc=32 T=1
+baseline     core              512x64  abs=1.141e-07 rel=5.573e-07 PASS
+blocked      core              512x64  abs=1.218e-07 rel=5.557e-07 PASS Br=32 Bc=32 T=1
+streaming    core              512x64  abs=8.416e-08 rel=4.402e-07 PASS Br=32 Bc=32 T=1
+All checks passed.
+c++  -DWITH_BLOCKED -DWITH_STREAMING -O3 -std=c++17 -Wall -Wextra -Wpedantic -Xpreprocessor -fopenmp -I../tmp/openmp/include -mcpu=native -fopenmp-simd -Isrc src/attention.cpp src/streaming.cpp test/streaming_test.cpp -L../tmp/openmp/lib -Wl,-rpath,../tmp/openmp/lib -lomp  -o streaming-test
+./streaming-test
+Streaming API: 601 shape/tile/thread configurations passed; input preservation, scratch bounds, buffer reuse, thread invariance and rejection checks passed.
+== 2 threads
+All checks passed.
+== 3 threads
+All checks passed.
+== 10 threads
+All checks passed.
+== 10 threads
+All checks passed.
+== 64 threads
+All checks passed.

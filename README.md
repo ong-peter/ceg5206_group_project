@@ -12,6 +12,14 @@ experiment, see the [benchmarking guide](docs/benchmarking.md).
 For the report's R1--R6 follow-up experiments and S1--S6 submission checklist,
 see the [report TODO run guide](docs/report_todos.md).
 
+## Report package
+
+The report, figures, source, tests and recorded experiment data are frozen at
+[`ceg5206-report-2026-11-13`](https://github.com/ong-peter/ceg5206_group_project/tree/ceg5206-report-2026-11-13).
+Read the [report PDF](report/main.pdf), [LaTeX source](report/main.tex), and
+[submission checks](docs/submission_checks_2026-11-13.md).
+The presentation video and its access check remain pending (S3).
+
 ## Layout
 
 | Path | Contents |

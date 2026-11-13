@@ -1,0 +1,5 @@
+Darwin ChendeMacBook-Air-3.local 27.2.0 Darwin Kernel Version 27.2.0: Wed Oct 14 23:47:07 PDT 2026; root:xnu-13432.41.4~25/RELEASE_ARM64_T8132 arm64
+Apple clang version 21.0.0 (clang-2100.4.1.1)
+Target: arm64-apple-darwin27.2.0
+Thread model: posix
+InstalledDir: /Library/Developer/CommandLineTools/usr/bin

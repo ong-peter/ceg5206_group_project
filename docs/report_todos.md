@@ -8,21 +8,22 @@ The report's R1--R6 identifiers are the experiment names used below. S1--S6
 are submission checks requiring the team's actual information. Scripts never
 remove TODO markers or insert experimental conclusions into the report.
 
-## Current remaining work (10 November 2026)
+## Current remaining work (13 November 2026)
 
-The supported R1--R6 evidence has been incorporated into the report. Only R3
-needs another performance session before ranking its two noisy 8-thread cases,
-`(2048,32)` and `(2048,64)`. Rerun **R3 only**, using the command below; the
-existing runner repeats all six R3 shapes and its serial stage diagnostics.
-It has no shape-selection option. The other completed experiments do not need
-to be repeated for this update.
+The report incorporates the supported R1--R6 evidence, including the six-round
+R3 rerun. Remaining uncertainties are described as limitations rather than
+uncompleted experiments. The report, figures and data are packaged in tag
+`ceg5206-report-2026-11-13`; see [submission checks](submission_checks_2026-11-13.md).
+Only S3 remains: record/link the video and verify instructor/TA access.
 
-Further investigations into R2's scaling loss, R5's historical slow rounds and
-R6's original ranking reversal are closed at the team's request. The report
-records possible explanations as unproven hypotheses and retains the limits
-of the existing evidence. S1--S6 still require the team's submission details
-and checks. The sections below retain the commands for reproducing each
-completed experiment; they are not all outstanding tasks.
+```bash
+python scripts/check_report_submission.py --final --allow-video-pending
+```
+
+The exception permits only S3; the normal `--final` gate must still fail until
+the video is added. The experiment sections below are reproduction instructions,
+not a list of outstanding runs. The historical S1--S6 table describes the full
+checklist; it does not override the report's current TODO markers.
 
 ## Setup
 

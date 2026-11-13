@@ -1,0 +1,3 @@
+c++  -DWITH_BLOCKED -DWITH_STREAMING -O3 -std=c++17 -Wall -Wextra -Wpedantic -mcpu=native -fopenmp-simd -Isrc src/attention.cpp src/streaming.cpp test/streaming_test.cpp   -o streaming-test
+./streaming-test
+Streaming API: 201 shape/tile/thread configurations passed; input preservation, scratch bounds, buffer reuse, thread invariance and rejection checks passed.
