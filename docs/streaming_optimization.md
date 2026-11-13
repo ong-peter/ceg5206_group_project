@@ -1,53 +1,51 @@
-# Streaming 单线程优化与瓶颈分析
+# Single-thread streaming attention optimization and bottleneck analysis
 
-> 历史记录：以下实验与命令描述的是 2026-10-17 的 C 优化，使用当时的独立比较配置。2026-11-08 已接入最新 A/B，统一构建和正式比较入口改为 `Makefile` / `bench.py`。当前命令见 [提交说明](member_c_submission.md)，当前验证见 [集成记录](integration_2026-11-08.md)。旧加速比不是最新 A/B/C 比较结果。
+> This record covers the standalone Part C experiments from 2026-10-17. Parts A and B were integrated on 2026-11-08, with the shared `Makefile` and benchmark runner used for team comparisons. See the [submission guide](member_c_submission.md) for current commands and the [integration record](integration_2026-11-08.md) for the integration checks. The speedups below apply to the October setup.
 
-本次只修改本地工作副本。基准固定 Br=Bc=32、1 线程；没有通过增大 tile、改变 baseline 编译选项或放宽容差来获得加速。
+The optimization was developed locally. All runs used Br=Bc=32 and one thread. Tile sizes, baseline compiler flags, and correctness tolerances were held fixed.
 
-## 为什么初版会稍慢
+## Where the original implementation spent time
 
-Streaming 删除了 N×N 分数矩阵，但仍需完成全部 QKᵀ 和乘 V 的计算。初版沿用普通逐分数点积，同时增加每个 key tile 的最大值、指数重缩放、运行状态更新和循环控制。原始小实验中 `(128,64)` 的 score buffer 只有 64 KiB，`(512,64)` 为 1 MiB；少分配这些内存并不保证 CPU 时间下降。这里没有测量 DRAM 流量或硬件 cache miss，不能把差异直接归因为 DRAM 瓶颈。
+Streaming avoids allocating the N×N score matrix. It still computes every QKᵀ score and the full product with V. The original implementation used an ordinary dot product for each score, then incurred additional work per key tile for the maximum, exponential rescaling, running-state updates, and loop control. The score buffers in the initial tests were 64 KiB at (128, 64) and 1 MiB at (512, 64). The measurements did not include DRAM traffic or hardware cache misses, so they cannot establish a DRAM bottleneck.
 
-之前的测量也没有交错算法运行，几百分点的差异易受系统状态影响。新的交错实验确认：旧版在 d=64 的较大形状仍慢于 baseline，但在一些 d=32/128 形状也会稍快。因此，“streaming 必然比 baseline 慢”不成立。
+The initial tests ran the algorithms separately, making differences of a few percent sensitive to system state. In interleaved runs, the original streaming kernel remained slower than the baseline on larger shapes with d=64 and was slightly faster on some shapes with d=32 or d=128.
 
-两个证据帮助定位本次优化方向：
+1. Temporary instrumentation split the original kernel into score computation and the online update plus PV. Score computation accounted for about 59% of the instrumented runtime at (512, 64) and (2048, 64). The stage timings include instrumentation overhead.
+2. The generated assembly used vector multiplication followed by sequential scalar accumulation. The accumulation dependency limited parallelism within each score.
 
-1. 临时插桩将旧版划分为分数计算和 online-update/PV 两段。在 `(512,64)` 和 `(2048,64)` 上，分数计算约占总时间的 59%。这是带计时开销的诊断数据，不替代主基准时间。
-2. 汇编显示旧分数点积虽然包含向量乘法，仍需要按顺序做标量累加。单个分数的累加依赖限制了并行性。“已有 vectorized loop”不能说明点积已高效利用 SIMD。
+The original kernel also computed alpha and rescaled u on every tile after the first. For random inputs, the running maximum increased on only 15.8% of those updates at N=512 and 6.0% at N=2048. Alpha was exactly 1 on the other updates, making the rescaling redundant.
 
-此外，旧版对每个后续块都计算 alpha 并遍历 u 重缩放。随机输入下，最大值实际增加的比例只有 15.8%（512）和 6.0%（2048）。其余更新中 alpha 恰好等于 1，可安全省去这部分工作。
+## Implemented optimizations
 
-## 已实现的改动
+### Transposed K tiles and eight-score accumulation
 
-### 小 K 块转置与八分数累加
+Each worker uses Bc×d extra floats to store the current key tile in transposed form. Eight independent accumulators compute scores for adjacent keys. At each feature, one Q value is multiplied by eight contiguous K values. Each score still accumulates features in order. Apple Clang emitted two four-lane `fmla.4s` instructions to update all eight scores in registers.
 
-在 worker scratch 中增加 `Bc×d` 个 float，保存当前 key tile 的转置。随后用 8 个独立累加器同时计算相邻的 8 个 key 分数。每个 feature 的一个 Q 值可以与 8 个连续 K 值相乘；各分数仍按 feature 顺序累加。Apple Clang 生成了两条四通道 `fmla.4s`，可在寄存器中同时推进这 8 个分数。
+The kernel uses portable C++ without ARM-specific intrinsics. Other CPUs require their own vectorization and performance checks. The remainder of fewer than eight keys uses ordinary dot products. Tests cover Bc=7/8/9/31/32/33 and uneven tiles and feature dimensions.
 
-代码使用可移植 C++，没有 ARM 专属 intrinsic。其他 CPU 的向量化和性能需要在目标平台重新确认。剩余不足 8 个 key 使用普通点积，测试覆盖 Bc=7/8/9/31/32/33 和非整除 N/d。
+Each query block repacks the K tiles it visits. The kernel timing includes that work. The implementation stores only the current transposed tile in scratch and uses no persistent auxiliary array.
 
-每个查询块仍会重新打包其遍历到的 K tile；这部分成本完整计入 kernel 时间。没有缓存全量转置矩阵，也没有 persistent auxiliary array。
+### Rescaling when the maximum increases
 
-### 仅在最大值增加时重缩放
+The first tile starts with l and u set to zero. For later tiles, `m_new == m` gives alpha=1, so the kernel adds the new tile's contribution to the existing state. If `m_new > m`, it rescales both l and u using the original online softmax recurrence. The computation still visits every key and uses standard exp.
 
-首块使用已清零的 l/u。后续若 `m_new == m`，alpha 为 1，保留旧 u 并加入新块；若 `m_new > m`，仍按原 online-softmax 递推同时重缩放 l/u。没有改变 softmax 语义、删除任何 key 或使用近似 exp。
+## Matched benchmarks and ablations
 
-## 同条件基准和消融
+`scripts/benchmark_streaming.py` compares five implementations in one process.
 
-`scripts/benchmark_streaming.py` 在同一个进程内比较 5 个实现：
-
-| 名称 | 内容 |
+| Variant | Implementation |
 | --- | --- |
-| baseline | 原 `attention.cpp`，未修改 |
-| original | 冻结的优化前 streaming，实现保存在 `benchmarks/streaming_original.cpp` |
-| rescale_only | 普通分数点积，仅跳过不必要的重缩放 |
-| packed_only | K packing 和八分数累加，保留每块重缩放 |
-| optimized | 两项优化均启用，即生产版本 |
+| baseline | Original baseline in `attention.cpp` |
+| original | Frozen pre-optimization streaming kernel, now in `src/benchmarks/streaming_original.cpp` |
+| rescale_only | Ordinary dot products with redundant rescaling skipped |
+| packed_only | K packing and eight-score accumulation with rescaling on every subsequent tile |
+| optimized | Both optimizations enabled |
 
-所有版本使用同样的 `-O3 -std=c++17 -Wall -Wextra -Wpedantic`，不启用 fast-math 或 LTO。每个形状先用精确 FP32 输入生成独立 NumPy FP64 reference，验证所有实现后再计时。buffer 预分配；每版本 5 次预热、15 次采样，短调用批量执行；每轮轮换并反转算法次序。全部 packing、初始化和归一化包含在时间内。原始采样、误差、scratch 和环境均保存。`rescale_only` 为控制算术消融保留与优化版相同的 scratch 容量，但不使用其中的 K panel。
+All variants used `-O3 -std=c++17 -Wall -Wextra -Wpedantic` without fast-math or LTO. For each shape, the benchmark generated an independent NumPy FP64 reference from the same FP32 inputs and validated every variant before timing it. Buffers were preallocated. Each variant used five warmups and 15 samples, with short calls batched. The benchmark rotated and reversed the execution order across rounds. Timings included packing, initialization, and normalization. Raw samples, errors, scratch sizes, and environment details were recorded. To control for scratch capacity, `rescale_only` reserved the same capacity as `optimized` and left the K panel unused.
 
-本机 Apple M4 Pro、macOS 26.6.2、Apple Clang 17.0.0；没有固定 CPU affinity 或频率。12 个主形状均通过基准内的独立 FP64 校验。结果是本机 warm-call 测量，不能推广为其他 CPU 的固定加速比。
+The tests ran on an Apple M4 Pro with macOS 26.6.2 and Apple Clang 17.0.0, without fixed CPU affinity or frequency. All 12 main shapes passed the independent FP64 checks. The table reports local warm-call measurements.
 
-| N, d | Baseline ms | 旧 streaming ms | 优化 streaming ms | 相对旧版加速 | 相对 baseline 加速 |
+| N, d | Baseline ms | Original streaming ms | Optimized streaming ms | Speedup over original | Speedup over baseline |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | 128, 64 | 0.264 | 0.262 | 0.168 | 1.56× | 1.57× |
 | 512, 64 | 4.018 | 4.227 | 2.696 | 1.57× | 1.49× |
@@ -55,22 +53,22 @@ Streaming 删除了 N×N 分数矩阵，但仍需完成全部 QKᵀ 和乘 V 的
 | 4096, 64 | 266.740 | 277.198 | 173.019 | 1.60× | 1.54× |
 | 4096, 128 | 608.515 | 595.524 | 311.583 | 1.91× | 1.95× |
 
-全部 12 个形状相对旧版加速 1.31–1.91×，相对 baseline 加速 1.35–1.95×。这些时间不与上一轮单独运行的时间直接拼接计算 speedup。
+Across all 12 shapes, the speedup ranged from 1.31–1.91× over the original streaming kernel and 1.35–1.95× over the baseline. Both ratios use timings from the same interleaved benchmark.
 
-在 `(2048,64)` 上，消融结果为：
+The ablation at (2048, 64) gave the following results.
 
-| 版本 | 中位数 ms |
+| Variant | Median ms |
 | --- | ---: |
 | original | 68.165 |
 | rescale_only | 64.784 |
 | packed_only | 43.721 |
 | optimized | 42.845 |
 
-主要收益来自分数计算的 SIMD 排列。只跳过重缩放在此例约减少 5% 时间，不足以解释完整加速。阶段插桩也观察到 score/packing 段从约 41.46 ms 降至 18.98 ms；优化后 online-update/PV 已成为较大的剩余部分。插桩会改变编译和计时开销，阶段数据只用于定位，不能与未插桩总时间直接相加。
+The SIMD-friendly score layout accounted for most of the speedup. Skipping redundant rescaling alone cut runtime by about 5%. Instrumentation showed that the score and packing stage fell from about 41.46 ms to 18.98 ms, leaving the online update and PV as the larger remaining stage. Instrumentation can affect code generation and runtime, so these stage timings are diagnostic.
 
-## 内存和正确性约束
+## Memory and correctness
 
-令 `R=min(Br,N)`、`C=min(Bc,N)`、`W=min(threads,ceil(N/R))`：
+Let `R=min(Br,N)`, `C=min(Bc,N)`, and `W=min(threads,ceil(N/R))`.
 
 ```text
 scratch bytes = 4W × [RC + Rd + 2R + Cd + (W>1 ? 32 : 0)]
@@ -78,41 +76,35 @@ Q/K/V/O bytes = 16Nd
 persistent auxiliary = 0
 ```
 
-相对旧版增加的只有每 worker 的 C×d 个 float。`N=4096,d=64,Br=Bc=32` 时：
+The optimized kernel adds C×d floats of scratch per worker. For `N=4096,d=64,Br=Bc=32`:
 
-| 实现 | Scratch |
+| Implementation | Scratch |
 | --- | ---: |
 | Baseline | 64 MiB |
-| 旧 streaming，1 线程 | 12.25 KiB |
-| 优化 streaming，1 线程 | 20.25 KiB |
-| 优化 streaming，4 线程容量 | 81.5 KiB |
+| Original streaming, one thread | 12.25 KiB |
+| Optimized streaming, one thread | 20.25 KiB |
+| Optimized streaming, four-thread capacity | 81.5 KiB |
 
-所有内存查询与测试断言已同步加入 K panel。scratch 预分配，不在 kernel 内申请内存；同一查询的完整 online recurrence 仍由一个线程负责。多 worker 的 packing buffer 也彼此独立。
+The workspace queries and test assertions account for the packed K panel. Scratch is preallocated, and workers have private packing buffers. A single worker still performs the full online recurrence for each query row.
 
-容差保持 `abs(O-Oref) <= 1e-4 + 1e-3*abs(Oref)`。SIMD/FMA 可能改变最后几位，验证目标是满足该误差契约，不要求与旧版逐位一致。相同实现、tile 与输入在不同线程数之间仍需逐位一致。
+The tolerance remains `abs(O-Oref) <= 1e-4 + 1e-3*abs(Oref)`. SIMD and FMA may change the last few bits relative to the original kernel. With the same implementation, tile sizes, and inputs, outputs must match bit for bit across thread counts.
 
-单线程和 4 线程各 111 项完整参考检查均通过，最大绝对误差为 `1.1178691438741908e-5`，最大相对 Frobenius 误差为 `1.458256254275443e-6`。这与旧版误差不完全相同，但没有放宽任何容差。201 组单线程 API 检查、601 组多线程 API 检查及 UBSan 均通过。
+The 111 full reference checks passed at both one and four threads. The maximum absolute error was `1.1178691438741908e-5` and the maximum relative Frobenius error was `1.458256254275443e-6`. The 201 serial API configurations, 601 multithreaded API configurations, and UBSan checks also passed.
 
-本阶段的测试记录在 `results/optimization/`。
+The local logs for this phase are in `results/optimization/`.
 
-- `correctness_serial.csv`：baseline 与 streaming 的全部 12 个形状、边界和特殊输入。
-- `correctness_openmp4.csv`：4 线程 streaming 的完整参考检查。
-- `api_serial.log`、`openmp_build.log`：201 / 601 组 API 配置，含新 SIMD 尾部边界、输入保护、NaN scratch、缓冲区复用和线程一致性。
-- `ubsan.log` 记录本阶段的 UBSan 检查。后续使用 LLVM 22.1.8 完成的 ASan 复测见[集成记录](integration_2026-11-08.md)。
-- `memory_serial.csv`、`memory_openmp4.csv`：更新后的内存统计。
-- `comparison.csv`：12 个形状、5 个实现的未插桩交错测量。
-- `profile.csv`：单独运行的阶段计时和最大值变化计数。
-- `streaming.s`、`streaming_original.s`、`vectorization.txt`：汇编和向量化证据。
+- `correctness_serial.csv` covers all 12 shapes, edge cases, and special inputs for baseline and streaming.
+- `correctness_openmp4.csv` records the full four-thread streaming reference checks.
+- `api_serial.log` and `openmp_build.log` cover 201 and 601 API configurations, including SIMD tails, input protection, NaN-filled scratch, buffer reuse, and thread consistency.
+- `ubsan.log` records the UBSan checks. See the [integration record](integration_2026-11-08.md) for the later LLVM 22.1.8 ASan run.
+- `memory_serial.csv` and `memory_openmp4.csv` record the updated scratch counts.
+- `comparison.csv` contains interleaved measurements of the five uninstrumented implementations across all 12 shapes.
+- `profile.csv` contains the separately measured stage timings and counts of running-maximum changes.
+- `streaming.s`, `streaming_original.s`, and `vectorization.txt` contain assembly and vectorization evidence.
 
-## 运行和依赖
+## Reproduction and dependencies
 
-在仓库根目录运行下列命令，默认编译优化版。
-
-```sh
-bash scripts/run_member_c.sh
-```
-
-复现本次比较（默认 3 个代表形状，`--full` 为 12 个）：
+For the current production build and shared tests, use the [Part C implementation guide](member_c.md). To run the historical comparison with the sources in the current layout, run these commands from the repository root. The default comparison uses three representative shapes. The `--full` run uses all 12.
 
 ```sh
 .venv/bin/python scripts/benchmark_streaming.py
@@ -120,8 +112,8 @@ bash scripts/run_member_c.sh
 .venv/bin/python scripts/profile_streaming.py
 ```
 
-使用 `--output results/optimization/another_run` 可保留其他比较结果；默认会覆盖同名 CSV。profile 只生成并编译临时副本，不修改生产源文件。
+Use `--output results/optimization/another_run` with the benchmark script to keep separate comparison results. The default overwrites CSVs with the same names. The profiler compiles temporary instrumented copies and leaves production sources untouched.
 
-**C 不依赖 B 或 D 尚未完成的代码。** 生产 kernel 只需要 `attention.h`、`streaming.cpp` 和 C++17 标准库；多线程另需 OpenMP。现有 CLI、baseline、FP64 reference 来自仓库已有基础。`benchmarks/` 的旧版本只服务于前后对照，不参与普通 `make`。
+The standalone Part C kernel requires `src/attention.h`, `src/streaming.cpp`, and the C++17 standard library. Multithreading also requires OpenMP. The existing repository supplies the CLI, baseline, and FP64 reference. The frozen kernel in `src/benchmarks/` serves the historical comparisons and is excluded from the normal build.
 
-B 仍负责独立的 blocked-materialized 实现，之后可与 C 协调共享 microkernel；这次局部 K packing 是让 C 独立运行的实现选择，没有实现或覆盖 B 的算法家族。D 可直接使用现有线程接口，继续完成正式调优、绑核、线程扩展和硬件 profiling。本次诊断脚本不要求等待 D，也不等于团队全部实验已经完成。
+Part B owns the separate blocked materialized implementation. The local K packing in this record was implemented inside Part C. Part D can use the shared threading interface for tuning, affinity, scaling, and hardware profiling. The measurements above cover the Part C diagnostics.
